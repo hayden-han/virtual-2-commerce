@@ -1,6 +1,6 @@
 spring:
   application:
-    name: hhplus
+    name: virtual-e-commerce
   profiles:
     active: local
   datasource:
