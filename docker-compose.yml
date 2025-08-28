@@ -8,7 +8,7 @@ services:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_USER=application
       - MYSQL_PASSWORD=application
-      - MYSQL_DATABASE=hhplus
+      - MYSQL_DATABASE=grindelwald
     volumes:
       - ./data/mysql/:/var/lib/mysql
 
