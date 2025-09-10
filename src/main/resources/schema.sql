@@ -68,7 +68,47 @@ CREATE TABLE IF NOT EXISTS coupon_owners (
 -- 회원별 쿠폰 조회 인덱스
 CREATE INDEX idx_coupon_owners_member_id ON coupon_owners(member_id);
 
--- 5. 주문 요약 테이블
+-- 5. 쿠폰 발급 상태 테이블
+CREATE TABLE IF NOT EXISTS coupon_issuance (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    coupon_summary_id BIGINT NOT NULL,
+    policy_type VARCHAR(50) NOT NULL COMMENT 'GENERAL, FIRST_COME_FIRST_SERVE',
+    max_count INT NULL COMMENT '최대 발급 수 (NULL이면 무제한)',
+    issued_count INT NOT NULL DEFAULT 0,
+    start_at DATETIME(6) NOT NULL,
+    end_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 쿠폰 요약별 발급 정책 조회 인덱스
+CREATE INDEX idx_coupon_issuance_coupon_summary_id ON coupon_issuance(coupon_summary_id);
+-- 발급 가능 시간 조회 인덱스
+CREATE INDEX idx_coupon_issuance_period ON coupon_issuance(start_at, end_at);
+
+-- 6. 쿠폰 발급 및 사용 이력 테이블
+CREATE TABLE IF NOT EXISTS coupon_history (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    coupon_summary_id BIGINT NOT NULL,
+    coupon_owner_id BIGINT NULL,
+    member_id BIGINT NOT NULL,
+    event_type VARCHAR(20) NOT NULL COMMENT 'ISSUED, USED, CANCELLED, EXPIRED',
+    order_summary_id BIGINT NULL COMMENT '사용/취소 시 주문 ID',
+    created_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 쿠폰별 이력 조회 인덱스
+CREATE INDEX idx_coupon_history_coupon_summary_id ON coupon_history(coupon_summary_id);
+-- 회원별 이력 조회 인덱스
+CREATE INDEX idx_coupon_history_member_id ON coupon_history(member_id);
+-- 이벤트 타입별 조회 인덱스
+CREATE INDEX idx_coupon_history_event_type ON coupon_history(event_type, created_at);
+-- 쿠폰 소유자별 이력 조회 인덱스
+CREATE INDEX idx_coupon_history_coupon_owner_id ON coupon_history(coupon_owner_id);
+
+-- 7. 주문 요약 테이블
 CREATE TABLE IF NOT EXISTS order_summary (
     id BIGINT NOT NULL AUTO_INCREMENT,
     member_id BIGINT NOT NULL,
@@ -81,7 +121,7 @@ CREATE TABLE IF NOT EXISTS order_summary (
 -- 회원별 주문 조회 인덱스
 CREATE INDEX idx_order_summary_member_id ON order_summary(member_id);
 
--- 6. 주문 상세 테이블
+-- 8. 주문 상세 테이블
 CREATE TABLE IF NOT EXISTS order_item (
     id BIGINT NOT NULL AUTO_INCREMENT,
     order_summary_id BIGINT NOT NULL,
