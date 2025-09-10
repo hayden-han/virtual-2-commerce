@@ -6,15 +6,18 @@
 erDiagram
     MEMBER ||--o{ MEMBER_BALANCE : "by member_id (no FK)"
     MEMBER ||--o{ ORDER_SUMMARY  : "by member_id (no FK)"
-    MEMBER ||--o{ COUPON_OWNERS  : "by member_id (no FK)"
+    MEMBER ||--o{ COUPON_OWNER  : "by member_id (no FK)"
     MEMBER ||--o{ COUPON_HISTORY : "by member_id (no FK)"
-    COUPON_SUMMARY ||--o{ COUPON_OWNERS : "has"
+    COUPON_SUMMARY ||--o{ COUPON_OWNER : "has"
     COUPON_SUMMARY ||--o{ COUPON_ISSUANCE : "has"
     COUPON_SUMMARY ||--o{ COUPON_HISTORY : "has"
-    COUPON_OWNERS ||--o{ COUPON_HISTORY : "by coupon_owner_id (no FK)"
+    COUPON_OWNER ||--o{ COUPON_HISTORY : "by coupon_owner_id (no FK)"
     ORDER_SUMMARY  ||--o{ ORDER_ITEM    : "has"
     ORDER_SUMMARY ||--o{ COUPON_HISTORY : "by order_summary_id (no FK)"
     PRODUCT_SUMMARY ||--o{ ORDER_ITEM   : "by product_id (no FK)"
+    PAYMENT_SUMMARY ||--o{ ORDER_SUMMARY : "by order_summary_id (no FK)"
+    PAYMENT_SUMMARY ||--o{ MEMBER : "by member_id (no FK)"
+    PAYMENT_SUMMARY ||--o{ COUPON_OWNER : "by coupon_owner_id (no FK)"
 
     MEMBER {
         BIGINT id PK
@@ -44,7 +47,7 @@ erDiagram
         DATETIME created_at
         DATETIME updated_at
     }
-    COUPON_OWNERS {
+    COUPON_OWNER {
         BIGINT id PK
         BIGINT coupon_summary_id
         BIGINT member_id
@@ -88,19 +91,34 @@ erDiagram
         DATETIME created_at
         DATETIME updated_at
     }
+    PAYMENT_SUMMARY {
+        BIGINT id PK
+        VARCHAR method
+        BIGINT total_amount
+        BIGINT discount_amount
+        BIGINT charge_amount
+        BIGINT member_id
+        BIGINT order_summary_id
+        BIGINT coupon_owner_id
+        DATETIME created_at
+        DATETIME updated_at
+    }
 ```
 - 핵심 관계
-    - member 1:N member_balance (논리 FK: member_balance.member_id, 현재 외래키 제약 없음)
+    - member 1:1 member_balance (논리 FK: member_balance.member_id, 현재 외래키 제약 없음)
     - member 1:N order_summary (논리 FK: order_summary.member_id, 현재 외래키 제약 없음)
-    - member 1:N coupon_owners (논리 FK: coupon_owners.member_id, 현재 외래키 제약 없음)
+    - member 1:N coupon_owner (논리 FK: coupon_owner.member_id, 현재 외래키 제약 없음)
     - member 1:N coupon_history (논리 FK: coupon_history.member_id, 현재 외래키 제약 없음)
-    - coupon_summary 1:N coupon_owners (논리 FK: coupon_owners.coupon_summary_id, 현재 외래키 제약 없음)
+    - coupon_summary 1:N coupon_owner (논리 FK: coupon_owner.coupon_summary_id, 현재 외래키 제약 없음)
     - coupon_summary 1:N coupon_issuance (논리 FK: coupon_issuance.coupon_summary_id, 현재 외래키 제약 없음)
     - coupon_summary 1:N coupon_history (논리 FK: coupon_history.coupon_summary_id, 현재 외래키 제약 없음)
-    - coupon_owners 1:N coupon_history (논리 FK: coupon_history.coupon_owner_id, 현재 외래키 제약 없음)
+    - coupon_owner 1:N coupon_history (논리 FK: coupon_history.coupon_owner_id, 현재 외래키 제약 없음)
     - order_summary 1:N order_item (논리 FK: order_item.order_summary_id, 현재 외래키 제약 없음)
     - order_summary → coupon_history (논리적 참조: coupon_history.order_summary_id, 현재 외래키 제약 없음)
     - product_summary → order_item (논리적 참조: order_item.product_id, 현재 외래키 제약 없음)
+    - payment_summary 1:1 member (member_id, FK 없음)
+    - payment_summary 1:1 order_summary (order_summary_id, FK 없음)
+    - payment_summary 1:1 coupon_owner (coupon_owner_id, FK 없음)
 
 ---
 
@@ -120,7 +138,7 @@ erDiagram
 - 관계
   - 1:N member_balance.member_id (FK 없음)
   - 1:N order_summary.member_id (FK 없음)
-  - 1:N coupon_owners.member_id (FK 없음)
+  - 1:N coupon_owner.member_id (FK 없음)
   - 1:N coupon_history.member_id (FK 없음)
 
 ### 1) member_balance
@@ -171,11 +189,11 @@ erDiagram
 - 인덱스
   - idx_coupon_summary_expired_at(expired_at)
 - 관계
-  - 1:N coupon_owners.coupon_summary_id (FK 없음)
+  - 1:N coupon_owner.coupon_summary_id (FK 없음)
   - 1:N coupon_issuance.coupon_summary_id (FK 없음)
   - 1:N coupon_history.coupon_summary_id (FK 없음)
 
-### 4) coupon_owners
+### 4) coupon_owner
 - 컬럼
 
 | 컬럼 | 타입 | 제약/설명 |
@@ -188,7 +206,7 @@ erDiagram
 | updated_at | DATETIME(6) | NOT NULL |
 
 - 인덱스
-  - idx_coupon_owners_member_id(member_id)
+  - idx_coupon_owner_member_id(member_id)
 - 관계
   - N:1 coupon_summary (FK 없음)
   - N:1 member (FK 없음)
@@ -235,7 +253,7 @@ erDiagram
   - idx_coupon_history_coupon_owner_id(coupon_owner_id)
 - 관계
   - N:1 coupon_summary (FK 없음)
-  - N:1 coupon_owners (FK 없음)
+  - N:1 coupon_owner (FK 없음)
   - N:1 member (FK 없음)
   - order_summary에 대한 논리적 참조 (FK 없음)
 
@@ -276,3 +294,28 @@ erDiagram
 - 관계
   - N:1 order_summary (FK 없음)
   - product_summary에 대한 논리적 참조 (FK 없음)
+
+### 9) payment_summary
+- 컬럼
+
+| 컬럼 | 타입 | 제약/설명                         |
+|---|---|-------------------------------|
+| id | BIGINT | PK, AUTO_INCREMENT            |
+| method | VARCHAR(50) | NOT NULL, 결제수단(POINT, CARD 등) |
+| total_amount | BIGINT | NOT NULL, 결제 총액               |
+| discount_amount | BIGINT | NOT NULL, 할인액                 |
+| charge_amount | BIGINT | NOT NULL, 실제 결제액              |
+| member_id | BIGINT | NOT NULL, 회원 ID               |
+| order_summary_id | BIGINT | NOT NULL, 주문 요약 ID            |
+| coupon_owner_id | BIGINT | NULL, 쿠폰 소유상태 ID              |
+| created_at | DATETIME(6) | NOT NULL                      |
+| updated_at | DATETIME(6) | NOT NULL                      |
+
+- 인덱스
+  - idx_payment_summary_member_id(member_id)
+  - idx_payment_summary_order_summary_id(order_summary_id)
+  - idx_payment_summary_coupon_owner_id(coupon_owner_id)
+- 관계
+  - N:1 member (FK 없음)
+  - N:1 order_summary (FK 없음)
+  - N:1 coupon_owner (FK 없음)

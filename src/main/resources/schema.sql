@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS coupon_summary (
 CREATE INDEX idx_coupon_summary_expired_at ON coupon_summary(expired_at);
 
 -- 4. 쿠폰 소유자 테이블
-CREATE TABLE IF NOT EXISTS coupon_owners (
+CREATE TABLE IF NOT EXISTS coupon_owner (
     id BIGINT NOT NULL AUTO_INCREMENT,
     coupon_summary_id BIGINT NOT NULL,
     member_id BIGINT NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS coupon_owners (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 회원별 쿠폰 조회 인덱스
-CREATE INDEX idx_coupon_owners_member_id ON coupon_owners(member_id);
+CREATE INDEX idx_coupon_owner_member_id ON coupon_owner(member_id);
 
 -- 5. 쿠폰 발급 상태 테이블
 CREATE TABLE IF NOT EXISTS coupon_issuance (
@@ -112,7 +112,6 @@ CREATE INDEX idx_coupon_history_coupon_owner_id ON coupon_history(coupon_owner_i
 CREATE TABLE IF NOT EXISTS order_summary (
     id BIGINT NOT NULL AUTO_INCREMENT,
     member_id BIGINT NOT NULL,
-    total_price BIGINT NOT NULL,
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
     PRIMARY KEY (id)
@@ -125,7 +124,7 @@ CREATE INDEX idx_order_summary_member_id ON order_summary(member_id);
 CREATE TABLE IF NOT EXISTS order_item (
     id BIGINT NOT NULL AUTO_INCREMENT,
     order_summary_id BIGINT NOT NULL,
-    product_id BIGINT NOT NULL,
+    product_summary_id BIGINT NOT NULL,
     quantity BIGINT NOT NULL,
     price BIGINT NOT NULL,
     created_at DATETIME(6) NOT NULL,
@@ -136,4 +135,24 @@ CREATE TABLE IF NOT EXISTS order_item (
 -- 주문별 상세 조회 인덱스
 CREATE INDEX idx_order_item_order_summary_id ON order_item(order_summary_id);
 -- 상위 상품조회 통계 인덱스
-CREATE INDEX idx_order_item_product_id ON order_item(created_at, product_id);
+CREATE INDEX idx_order_item_product_summary_id ON order_item(created_at, product_summary_id);
+
+-- 9. 결제 요약 테이블
+CREATE TABLE IF NOT EXISTS payment_summary (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    method VARCHAR(50) NOT NULL,
+    total_amount BIGINT NOT NULL,
+    discount_amount BIGINT NOT NULL DEFAULT 0,
+    charge_amount BIGINT NOT NULL,
+    member_id BIGINT NOT NULL,
+    order_summary_id BIGINT NOT NULL,
+    coupon_owner_id BIGINT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 결제 관련 인덱스
+CREATE INDEX idx_payment_summary_member_id ON payment_summary(member_id);
+CREATE INDEX idx_payment_summary_order_summary_id ON payment_summary(order_summary_id);
+CREATE INDEX idx_payment_summary_coupon_owner_id ON payment_summary(coupon_owner_id);

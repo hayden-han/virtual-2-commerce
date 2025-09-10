@@ -1,0 +1,86 @@
+package kr.hhplus.be.server.application.facade.order
+
+import jakarta.transaction.Transactional
+import kr.hhplus.be.server.application.port.out.MemberOutput
+import kr.hhplus.be.server.application.usecase.balance.MyBalanceUseCase
+import kr.hhplus.be.server.application.usecase.coupon.MyCouponUseCase
+import kr.hhplus.be.server.application.usecase.order.GenerateOrderUseCase
+import kr.hhplus.be.server.application.usecase.order.PlaceOrderUseCase
+import kr.hhplus.be.server.application.usecase.payment.GeneratePaymentUseCase
+import kr.hhplus.be.server.application.usecase.product.ProductQuantityUseCase
+import kr.hhplus.be.server.application.vo.PlaceOrderItemVO
+import kr.hhplus.be.server.application.vo.PlaceOrderPaymentSummaryVO
+import kr.hhplus.be.server.application.vo.PlaceOrderResultVO
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+
+@Service
+class PlaceOrderFacade(
+    private val memberOutput: MemberOutput,
+    private val generateOrderUseCase: GenerateOrderUseCase,
+    private val myBalanceUseCase: MyBalanceUseCase,
+    private val generatePaymentUseCase: GeneratePaymentUseCase,
+    private val productQuantityUseCase: ProductQuantityUseCase,
+    private val myCouponUseCase: MyCouponUseCase,
+    private val eventPublisher: ApplicationEventPublisher,
+) : PlaceOrderUseCase {
+    /**
+     * 유저의 상품주문
+     * - 유저정보 조회
+     * - 주문상태 생성
+     * - 쿠폰 사용
+     * - 결제정보 생성
+     * - 유저의 잔고 포인트 차감
+     * - 상품의 재고 차감
+     *
+     * TODO: 동시성 이슈 방지를 위해 분산락 적용 필요
+     */
+    @Transactional
+    override fun placeOrder(
+        memberId: Long,
+        couponSummaryId: Long?,
+        orderItems: List<PlaceOrderItemVO>,
+        requestPaymentSummary: PlaceOrderPaymentSummaryVO,
+        orderAt: LocalDateTime,
+    ): PlaceOrderResultVO {
+        val member =
+            memberOutput
+                .findById(memberId)
+                .orElseThrow { IllegalArgumentException("Member not found with id: $memberId") }
+
+        val orderSummary =
+            generateOrderUseCase.generateOrder(
+                member = member,
+                orderItems = orderItems,
+            )
+
+        val couponOwner =
+            couponSummaryId?.let {
+                myCouponUseCase.using(
+                    member = member,
+                    couponSummaryId = couponSummaryId,
+                    now = orderAt,
+                )
+            }
+
+        val paymentSummary =
+            generatePaymentUseCase.generatePaymentSummary(
+                member = member,
+                couponOwner = couponOwner,
+                orderSummary = orderSummary,
+                requestPaymentSummary = requestPaymentSummary,
+            )
+
+        myBalanceUseCase.reduceMyBalance(
+            memberId = memberId,
+            amount = paymentSummary.chargeAmount,
+        )
+        productQuantityUseCase.reduceBy(orderSummary.orderItems)
+
+        val placeOrderResult = PlaceOrderResultVO.of(orderSummary, paymentSummary)
+        eventPublisher.publishEvent(placeOrderResult)
+
+        return placeOrderResult
+    }
+}
