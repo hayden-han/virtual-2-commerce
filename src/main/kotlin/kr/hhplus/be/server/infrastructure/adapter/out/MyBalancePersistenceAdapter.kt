@@ -18,14 +18,19 @@ class MyBalancePersistenceAdapter(
             .findByMemberId(memberId)
             .map(MemberBalanceJpaEntity::toDomain)
 
+    @Transactional(readOnly = true)
     override fun findByIdAndMemberId(
         memberBalanceId: Long,
         memberId: Long,
-    ): Optional<MemberBalance> {
-        TODO("Not yet implemented")
-    }
+    ): Optional<MemberBalance> =
+        repository
+            .findByIdAndMemberId(memberBalanceId, memberId)
+            .map(MemberBalanceJpaEntity::toDomain)
 
-    override fun save(myBalance: MemberBalance): MemberBalance {
-        TODO("Not yet implemented")
-    }
+    @Transactional
+    override fun save(myBalance: MemberBalance): MemberBalance =
+        MemberBalanceJpaEntity
+            .from(myBalance)
+            .let(repository::save)
+            .toDomain()
 }

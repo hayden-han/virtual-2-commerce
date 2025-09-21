@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+#  datasource:
+#    master:
+#      url: jdbc:tc:mysql:8.0.36:///grindelwald?characterEncoding=UTF-8&serverTimezone=UTC
+#      username: root
+#      password: test
+#    slave:
+#      url: jdbc:tc:mysql:8.0.36:///grindelwald?characterEncoding=UTF-8&serverTimezone=UTC
+#      username: root
+#      password: test

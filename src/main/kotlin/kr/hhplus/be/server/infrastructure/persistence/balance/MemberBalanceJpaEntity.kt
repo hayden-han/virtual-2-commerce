@@ -32,4 +32,14 @@ class MemberBalanceJpaEntity(
             member = this.member.toDomain(),
             balance = this.balance,
         )
+
+    companion object {
+        fun from(domain: MemberBalance): MemberBalanceJpaEntity =
+            MemberBalanceJpaEntity(
+                MemberJpaEntity.from(domain.member),
+            ).apply {
+                this.id = domain.id
+                this.balance = domain.balance
+            }
+    }
 }

@@ -15,5 +15,8 @@ class MyCouponController(
     @GetMapping
     fun getMyCoupons(
         @RequestHeader("X-Member-Id") memberId: Long,
-    ): MyCouponsResponse = myCouponUseCase.getMyCoupons(memberId)
+    ): MyCouponsResponse {
+        val coupons = myCouponUseCase.getMyCoupons(memberId)
+        return MyCouponsResponse(coupons)
+    }
 }

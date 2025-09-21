@@ -1,12 +1,14 @@
 package kr.hhplus.be.server.application.usecase.coupon
 
+import kr.hhplus.be.server.application.vo.CouponItemVO
 import kr.hhplus.be.server.domain.model.coupon.CouponOwner
 import kr.hhplus.be.server.domain.model.member.Member
+import kr.hhplus.be.server.presentation.dto.coupon.CouponItem
 import kr.hhplus.be.server.presentation.dto.coupon.MyCouponsResponse
 import java.time.LocalDateTime
 
 interface MyCouponUseCase {
-    fun getMyCoupons(memberId: Long): MyCouponsResponse
+    fun getMyCoupons(memberId: Long): List<CouponItemVO>
 
     fun using(
         member: Member,

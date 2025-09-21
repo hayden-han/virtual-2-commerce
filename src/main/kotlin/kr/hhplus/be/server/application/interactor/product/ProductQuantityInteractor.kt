@@ -6,7 +6,6 @@ import kr.hhplus.be.server.domain.model.order.OrderItem
 import kr.hhplus.be.server.domain.model.product.ProductSummary
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import kotlin.collections.get
 
 @Service
 class ProductQuantityInteractor(

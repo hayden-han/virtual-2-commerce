@@ -11,6 +11,7 @@ import kr.hhplus.be.server.application.usecase.product.ProductQuantityUseCase
 import kr.hhplus.be.server.application.vo.PlaceOrderItemVO
 import kr.hhplus.be.server.application.vo.PlaceOrderPaymentSummaryVO
 import kr.hhplus.be.server.application.vo.PlaceOrderResultVO
+import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -26,6 +27,7 @@ class PlaceOrderFacade(
     private val eventPublisher: ApplicationEventPublisher,
 ) : PlaceOrderUseCase {
     /**
+     * TODO: 동시성 이슈 방지를 위해 분산락 적용 필요. 지금은 해당 이슈를 고려하지 않음.
      * 유저의 상품주문
      * - 유저정보 조회
      * - 주문상태 생성
@@ -33,8 +35,6 @@ class PlaceOrderFacade(
      * - 결제정보 생성
      * - 유저의 잔고 포인트 차감
      * - 상품의 재고 차감
-     *
-     * TODO: 동시성 이슈 방지를 위해 분산락 적용 필요
      */
     @Transactional
     override fun placeOrder(
@@ -47,7 +47,12 @@ class PlaceOrderFacade(
         val member =
             memberOutput
                 .findById(memberId)
-                .orElseThrow { IllegalArgumentException("Member not found with id: $memberId") }
+                .orElseThrow {
+                    ConflictResourceException(
+                        message = "회원정보를 찾을 수 없습니다.",
+                        clue = mapOf("memberId" to memberId),
+                    )
+                }
 
         val orderSummary =
             generateOrderUseCase.generateOrder(
@@ -69,7 +74,7 @@ class PlaceOrderFacade(
                 member = member,
                 couponOwner = couponOwner,
                 orderSummary = orderSummary,
-                requestPaymentSummary = requestPaymentSummary,
+                method = requestPaymentSummary.method,
             )
 
         myBalanceUseCase.reduceMyBalance(

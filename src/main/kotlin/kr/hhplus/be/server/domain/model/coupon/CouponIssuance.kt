@@ -3,7 +3,6 @@ package kr.hhplus.be.server.domain.model.coupon
 import kr.hhplus.be.server.domain.model.coupon.policy.CouponIssuancePolicy
 import kr.hhplus.be.server.domain.model.member.Member
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 /**
  * 쿠폰 발급 상태. 쿠폰 정보에서 분리한 이유는

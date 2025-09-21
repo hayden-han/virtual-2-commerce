@@ -1,10 +1,8 @@
 package kr.hhplus.be.server.application.usecase.payment
 
-import kr.hhplus.be.server.application.vo.PlaceOrderPaymentSummaryVO
 import kr.hhplus.be.server.domain.model.coupon.CouponOwner
 import kr.hhplus.be.server.domain.model.member.Member
 import kr.hhplus.be.server.domain.model.order.OrderSummary
-import kr.hhplus.be.server.domain.model.payment.PaymentMethod
 import kr.hhplus.be.server.domain.model.payment.PaymentSummary
 import org.springframework.stereotype.Service
 
@@ -17,6 +15,6 @@ interface GeneratePaymentUseCase {
         member: Member,
         couponOwner: CouponOwner?,
         orderSummary: OrderSummary,
-        requestPaymentSummary: PlaceOrderPaymentSummaryVO,
+        method: String,
     ): PaymentSummary
 }

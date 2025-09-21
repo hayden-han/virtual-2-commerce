@@ -22,8 +22,8 @@
 > | http code     | content-type                      | response                                    |
 > |---------------|-----------------------------------|---------------------------------------------|
 > | `200`         | `application/json`                | `{"balance": 50000}`                        |
-> | `400`         | `application/json`                | `{"code":"BB001","message":"회원ID가 필요합니다"}` |
-> | `401`         | `application/json`                | `{"code":"401","message":"인증실패"}`           |
+> | `400`         | `application/json`                | `{"message":"회원ID가 필요합니다"}` |
+> | `401`         | `application/json`                | `{"message":"인증실패"}`           |
 
 ##### Example cURL
 
@@ -71,9 +71,9 @@
 > | http code     | content-type                      | response                                    |
 > |---------------|-----------------------------------|---------------------------------------------|
 > | `200`         | `application/json`                | `{"balance": 60000}`                        |
-> | `400`         | `application/json`                | `{"code":"BB001","message":"회원ID가 필요합니다"}`  |
-> | `401`         | `application/json`                | `{"code":"401","message":"인증실패"}`           |
-> | `404`         | `application/json`                | `{"code":"404","message":"잔액정보를 확인할수없습니다"}` |
+> | `400`         | `application/json`                | `{"message":"회원ID가 필요합니다"}`  |
+> | `401`         | `application/json`                | `{"message":"인증실패"}`           |
+> | `404`         | `application/json`                | `{"message":"잔액정보를 확인할수없습니다"}` |
 
 ##### Example cURL
 
@@ -106,7 +106,7 @@
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
 > | `200`         | `application/json`                | `[{"productList": [{"productId": 1, "productName": "상품명", "price": 10000, "stockQuantity": 100}]}]` |
-> | `400`         | `application/json`                | `{"code":"400","message":"잘못된 페이지 파라미터입니다"}`                   |
+> | `400`         | `application/json`                | `{"message":"잘못된 페이지 파라미터입니다"}`                   |
 
 ##### Example cURL
 
@@ -132,7 +132,7 @@
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
 > | `200`         | `application/json`                | `[{"productList": [{"productId": 1, "productName": "인기상품", "price": 20000, "stockQuantity": 50}]}]` |
-> | `500`         | `application/json`                | `{"code":"500","message":"인기 상품 조회 중 오류가 발생했습니다"}`            |
+> | `500`         | `application/json`                | `{"message":"인기 상품 조회 중 오류가 발생했습니다"}`            |
 
 ##### Example cURL
 
@@ -170,9 +170,9 @@
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
 > | `200`         | `application/json`                | `{"id": 1, "name": "신규 회원 할인 쿠폰", "discountPercentage": 10, "expiredAt": "2024-12-31T23:59:59"}` |
-> | `400`         | `application/json`                | `{"code":"400","message":"회원 ID가 필요합니다"}`                        |
-> | `409`         | `application/json`                | `{"code":"409","message":"이미 쿠폰을 발급받으셨습니다"}`                   |
-> | `410`         | `application/json`                | `{"code":"410","message":"쿠폰이 모두 소진되었습니다"}`                     |
+> | `400`         | `application/json`                | `{"message":"회원 ID가 필요합니다"}`                        |
+> | `409`         | `application/json`                | `{"message":"이미 쿠폰을 발급받으셨습니다"}`                   |
+> | `410`         | `application/json`                | `{"message":"쿠폰이 모두 소진되었습니다"}`                     |
 
 ##### Example cURL
 
@@ -204,8 +204,8 @@
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
 > | `200`         | `application/json`                | `{"coupons": [{"id": 1, "name": "10% 할인 쿠폰", "discountPercentage": 10, "expiredAt": "2024-12-31T23:59:59", "usingAt": "2024-01-15T10:30:00"}]}` |
-> | `400`         | `application/json`                | `{"code":"400","message":"회원 ID가 필요합니다"}`                        |
-> | `401`         | `application/json`                | `{"code":"401","message":"인증 실패"}`                               |
+> | `400`         | `application/json`                | `{"message":"회원 ID가 필요합니다"}`                        |
+> | `401`         | `application/json`                | `{"message":"인증 실패"}`                               |
 
 ##### Example cURL
 
@@ -257,10 +257,10 @@
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
 > | `200`         | `application/json`                | `{"orderId": 12345}`                                               |
-> | `400`         | `application/json`                | `{"code":"400","message":"회원 ID가 필요합니다"}`                        |
-> | `402`         | `application/json`                | `{"code":"402","message":"잔액이 부족합니다"}`                          |
-> | `404`         | `application/json`                | `{"code":"404","message":"상품을 찾을 수 없습니다"}`                      |
-> | `409`         | `application/json`                | `{"code":"409","message":"재고가 부족합니다"}`                          |
+> | `400`         | `application/json`                | `{"message":"회원 ID가 필요합니다"}`                        |
+> | `402`         | `application/json`                | `{"message":"잔액이 부족합니다"}`                          |
+> | `404`         | `application/json`                | `{"message":"상품을 찾을 수 없습니다"}`                      |
+> | `409`         | `application/json`                | `{"message":"재고가 부족합니다"}`                          |
 
 ##### Example cURL
 

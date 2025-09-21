@@ -13,30 +13,30 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("(/api/v1/balances/me")
+@RequestMapping("/api/v1/balances/me")
 class MyBalanceController(
     private val myBalanceUseCase: MyBalanceUseCase,
 ) {
     @GetMapping
     fun getMyBalance(
         @RequestHeader("X-Member-Id") memberId: Long,
-    ): MyBalanceResponse =
-        MyBalanceResponse.from(
-            myBalanceUseCase.getMyBalance(memberId),
-        )
+    ): MyBalanceResponse {
+        val memberBalance = myBalanceUseCase.getMyBalance(memberId)
+        return MyBalanceResponse(memberBalance)
+    }
 
     @PutMapping("{memberBalanceId}/recharge")
     fun rechargeMyBalance(
         @RequestHeader("X-Member-Id") memberId: Long,
         @PathVariable memberBalanceId: Long,
         @RequestBody requestData: RechargeMyBalanceRequest,
-    ): RechargeMyBalanceResponse =
-        RechargeMyBalanceResponse.from(
-            myBalanceUseCase
-                .rechargeMyBalance(
-                    memberId = memberId,
-                    memberBalanceId = memberBalanceId,
-                    amount = requestData.chargeAmount,
-                ),
-        )
+    ): RechargeMyBalanceResponse {
+        val memberBalance =
+            myBalanceUseCase.rechargeMyBalance(
+                memberId = memberId,
+                memberBalanceId = memberBalanceId,
+                amount = requestData.chargeAmount,
+            )
+        return RechargeMyBalanceResponse(memberBalance)
+    }
 }

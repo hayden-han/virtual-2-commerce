@@ -8,4 +8,6 @@ interface CouponOwnerJpaRepository : JpaRepository<CouponOwnerJpaEntity, Long> {
         id: Long,
         memberId: Long,
     ): Optional<CouponOwnerJpaEntity>
+
+    fun findAllByMemberId(memberId: Long): List<CouponOwnerJpaEntity>
 }

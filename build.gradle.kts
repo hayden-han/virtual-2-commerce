@@ -54,9 +54,11 @@ dependencies {
 
     // DB
     runtimeOnly("com.mysql:mysql-connector-j")
-
     // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
+
+    // Swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -64,11 +66,13 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("io.mockk:mockk:1.14.5")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
     systemProperty("user.timezone", "UTC")
+    jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
 }
 
 // Docker Compose 연동 태스크 추가

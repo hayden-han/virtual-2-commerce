@@ -4,15 +4,12 @@ import kr.hhplus.be.server.domain.model.balance.MemberBalance
 
 data class MyBalanceResponse(
     val balanceId: Long,
-    val availableBalance: Long,
+    val availableAmount: Long,
 ) {
-    companion object {
-        fun from(memberBalance: MemberBalance): MyBalanceResponse =
-            MyBalanceResponse(
-                balanceId = memberBalance.id!!,
-                availableBalance = memberBalance.balance,
-            )
-    }
+    constructor(memberBalance: MemberBalance) : this(
+        balanceId = memberBalance.id!!,
+        availableAmount = memberBalance.balance,
+    )
 }
 
 data class RechargeMyBalanceRequest(
@@ -21,13 +18,10 @@ data class RechargeMyBalanceRequest(
 
 data class RechargeMyBalanceResponse(
     val balanceId: Long,
-    val availableBalance: Long,
+    val availableAmount: Long,
 ) {
-    companion object {
-        fun from(rechargedBalance: MemberBalance): RechargeMyBalanceResponse =
-            RechargeMyBalanceResponse(
-                balanceId = rechargedBalance.id!!,
-                availableBalance = rechargedBalance.balance,
-            )
-    }
+    constructor(memberBalance: MemberBalance) : this(
+        balanceId = memberBalance.id!!,
+        availableAmount = memberBalance.balance,
+    )
 }

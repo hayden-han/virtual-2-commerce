@@ -2,6 +2,7 @@ package kr.hhplus.be.server.application.interactor.balance
 
 import kr.hhplus.be.server.application.port.out.MyBalanceOutput
 import kr.hhplus.be.server.application.usecase.balance.MyBalanceUseCase
+import kr.hhplus.be.server.domain.exception.NotFoundResourceException
 import kr.hhplus.be.server.domain.model.balance.MemberBalance
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -14,7 +15,12 @@ class MyBalanceInteractor(
     override fun getMyBalance(memberId: Long): MemberBalance =
         myBalanceOutput
             .findByMemberId(memberId)
-            .orElseThrow { IllegalArgumentException("회원의 잔고를 찾을 수 없습니다.") }
+            .orElseThrow {
+                NotFoundResourceException(
+                    message = "잔고정보를 찾을 수 없습니다.",
+                    clue = mapOf("memberId" to memberId),
+                )
+            }
 
     @Transactional
     override fun rechargeMyBalance(
@@ -25,8 +31,16 @@ class MyBalanceInteractor(
         val rechargedBalance: MemberBalance =
             myBalanceOutput
                 .findByIdAndMemberId(memberBalanceId, memberId)
-                .orElseThrow { IllegalArgumentException("회원의 잔고를 찾을 수 없습니다.") }
-                .recharge(amount)
+                .orElseThrow {
+                    NotFoundResourceException(
+                        message = "잔고정보를 찾을 수 없습니다.",
+                        clue =
+                            mapOf(
+                                "memberBalanceId" to memberBalanceId,
+                                "memberId" to memberId,
+                            ),
+                    )
+                }.recharge(amount)
 
         return myBalanceOutput.save(rechargedBalance)
     }
@@ -39,8 +53,13 @@ class MyBalanceInteractor(
         val reducedBalance: MemberBalance =
             myBalanceOutput
                 .findByMemberId(memberId)
-                .orElseThrow { IllegalArgumentException("회원의 잔고를 찾을 수 없습니다.") }
-                .reduce(amount)
+                .orElseThrow {
+                    // 방어코드지만 데이터의 정합성이 깨지지않는한 발생하는 경우는 없다
+                    NotFoundResourceException(
+                        message = "잔고정보를 찾을 수 없습니다.",
+                        clue = mapOf("memberId" to memberId),
+                    )
+                }.reduce(amount)
         return myBalanceOutput.save(reducedBalance)
     }
 }

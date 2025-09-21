@@ -20,6 +20,11 @@ class CouponOwnerPersistenceAdapter(
             .findByIdAndMemberId(couponSummaryId, memberId)
             .map(CouponOwnerJpaEntity::toDomain)
 
+    override fun findAllByMemberId(memberId: Long): List<CouponOwner> =
+        couponOwnerJpaRepository
+            .findAllByMemberId(memberId)
+            .map(CouponOwnerJpaEntity::toDomain)
+
     override fun save(couponOwner: CouponOwner): CouponOwner {
         val entity =
             CouponOwnerJpaEntity(

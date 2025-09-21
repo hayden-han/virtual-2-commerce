@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.domain.model.balance
 
+import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import kr.hhplus.be.server.domain.model.member.Member
 
 /**
@@ -14,12 +15,11 @@ data class MemberBalance(
      * 잔액 차감
      */
     fun reduce(amount: Long): MemberBalance {
-        if (amount <= 0) {
-            throw IllegalArgumentException("차감 금액은 0원 이상이어야 합니다.")
-        }
-
         if (balance < amount) {
-            throw IllegalArgumentException("잔액이 부족합니다.")
+            throw ConflictResourceException(
+                message = "잔고의 금액이 부족합니다.",
+                clue = mapOf("잔고ID" to "$id", "현재잔액" to "$balance", "차감금액" to "$amount"),
+            )
         }
 
         return copy(
@@ -34,7 +34,7 @@ data class MemberBalance(
      */
     fun recharge(amount: Long): MemberBalance {
         if (amount <= 0) {
-            throw IllegalArgumentException("충전 금액은 0원 이상이어야 합니다.")
+            throw IllegalArgumentException("충전 금액은 0원보다 커야합니다.")
         }
 
         return copy(

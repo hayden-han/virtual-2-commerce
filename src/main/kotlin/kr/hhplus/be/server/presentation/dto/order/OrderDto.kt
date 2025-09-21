@@ -5,7 +5,7 @@ import kr.hhplus.be.server.application.vo.PlaceOrderPaymentSummaryVO
 import kr.hhplus.be.server.application.vo.PlaceOrderResultVO
 
 data class PlaceOrderRequest(
-    val couponSummaryId: Long,
+    val couponSummaryId: Long?,
     val orderItems: List<OrderItemDto>,
     val paymentSummary: PaymentSummaryDto,
 )
@@ -43,25 +43,22 @@ data class PlaceOrderResponse(
     val paymentSummary: PaymentSummaryDto,
     val orderItems: List<OrderItemDto>,
 ) {
-    companion object {
-        fun from(placeOrderResult: PlaceOrderResultVO): PlaceOrderResponse =
-            PlaceOrderResponse(
-                orderId = placeOrderResult.orderId,
-                paymentSummary =
-                    PaymentSummaryDto(
-                        method = placeOrderResult.paymentMethod,
-                        totalAmount = placeOrderResult.paymentTotalAmount,
-                        discountAmount = placeOrderResult.paymentDiscountAmount,
-                        chargeAmount = placeOrderResult.paymentChargeAmount,
-                    ),
-                orderItems =
-                    placeOrderResult.orderItems.map {
-                        OrderItemDto(
-                            productSummaryId = it.productSummaryId,
-                            price = it.price,
-                            quantity = it.quantity,
-                        )
-                    },
-            )
-    }
+    constructor(placeOrderResult: PlaceOrderResultVO) : this(
+        orderId = placeOrderResult.orderId,
+        paymentSummary =
+            PaymentSummaryDto(
+                method = placeOrderResult.paymentMethod,
+                totalAmount = placeOrderResult.paymentTotalAmount,
+                discountAmount = placeOrderResult.paymentDiscountAmount,
+                chargeAmount = placeOrderResult.paymentChargeAmount,
+            ),
+        orderItems =
+            placeOrderResult.orderItems.map {
+                OrderItemDto(
+                    productSummaryId = it.productSummaryId,
+                    price = it.price,
+                    quantity = it.quantity,
+                )
+            },
+    )
 }

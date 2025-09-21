@@ -1,7 +1,5 @@
 package kr.hhplus.be.server.domain.model.order
 
-import kr.hhplus.be.server.domain.model.member.Member
-
 data class OrderSummary(
     val id: Long?,
     val memberId: Long,

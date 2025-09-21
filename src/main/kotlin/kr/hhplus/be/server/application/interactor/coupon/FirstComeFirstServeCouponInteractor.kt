@@ -4,15 +4,20 @@ import kr.hhplus.be.server.presentation.dto.coupon.FirstComeFirstServeCouponsIss
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import kotlin.Long
 
 @Service
 class FirstComeFirstServeCouponInteractor {
     @Transactional
-    fun issueCoupon(memberId: Long): FirstComeFirstServeCouponsIssuanceResponse =
-        FirstComeFirstServeCouponsIssuanceResponse(
+    fun issueCoupon(memberId: Long): FirstComeFirstServeCouponsIssuanceResponse {
+        /*
+        TODO: 선착순 쿠폰 발급로직 구현
+         */
+        return FirstComeFirstServeCouponsIssuanceResponse(
             id = 1L,
-            name = "10% 할인 쿠폰",
+            name = "SPRING_SALE",
             discountPercentage = 10L,
-            expiredAt = LocalDateTime.of(2025, 12, 31, 23, 59, 59),
+            expiredAt = LocalDateTime.of(2026, 3, 18, 13, 0),
         )
+    }
 }

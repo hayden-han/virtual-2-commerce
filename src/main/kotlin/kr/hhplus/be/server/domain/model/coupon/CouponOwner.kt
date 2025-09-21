@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.domain.model.coupon
 
+import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import kr.hhplus.be.server.domain.model.member.Member
 import java.time.LocalDateTime
 
@@ -36,15 +37,18 @@ data class CouponOwner(
         now: LocalDateTime = LocalDateTime.now(),
     ) {
         if (member.id != memberId) {
-            throw IllegalStateException("쿠폰 소유자와 사용자가 다릅니다.")
+            throw ConflictResourceException(
+                message = "사용하려는 유저에게 발급된 쿠폰이 아닙니다.",
+                clue = mapOf("요청 유저ID" to "${member.id}", "쿠폰을 보유한 유저ID" to "$memberId"),
+            )
         }
 
         if (usingAt != null) {
-            throw IllegalStateException("이미 사용된 쿠폰입니다.")
+            throw ConflictResourceException(message = "이미 사용된 쿠폰입니다.")
         }
 
         if (couponSummary.isExpired(now)) {
-            throw IllegalStateException("만료된 쿠폰입니다.")
+            throw ConflictResourceException("만료된 쿠폰입니다.")
         }
     }
 }
