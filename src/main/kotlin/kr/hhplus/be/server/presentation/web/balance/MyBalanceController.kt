@@ -4,13 +4,7 @@ import kr.hhplus.be.server.application.usecase.balance.MyBalanceUseCase
 import kr.hhplus.be.server.presentation.dto.balance.MyBalanceResponse
 import kr.hhplus.be.server.presentation.dto.balance.RechargeMyBalanceRequest
 import kr.hhplus.be.server.presentation.dto.balance.RechargeMyBalanceResponse
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/balances/me")

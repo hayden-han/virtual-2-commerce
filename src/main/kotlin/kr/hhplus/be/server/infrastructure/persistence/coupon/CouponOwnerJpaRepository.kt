@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.infrastructure.persistence.coupon
 
 import org.springframework.data.jpa.repository.JpaRepository
-import java.util.Optional
+import java.util.*
 
 interface couponJpaRepository : JpaRepository<CouponJpaEntity, Long> {
     fun findByIdAndMemberId(

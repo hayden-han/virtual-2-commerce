@@ -3,11 +3,7 @@ package kr.hhplus.be.server.presentation.web.order
 import kr.hhplus.be.server.application.usecase.order.PlaceOrderUseCase
 import kr.hhplus.be.server.presentation.dto.order.PlaceOrderRequest
 import kr.hhplus.be.server.presentation.dto.order.PlaceOrderResponse
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/orders")
