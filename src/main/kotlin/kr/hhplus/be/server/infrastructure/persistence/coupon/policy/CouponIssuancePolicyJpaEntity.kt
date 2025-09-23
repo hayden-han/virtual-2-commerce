@@ -1,7 +1,6 @@
 package kr.hhplus.be.server.infrastructure.persistence.coupon.policy
 
 import jakarta.persistence.*
-import kr.hhplus.be.server.domain.model.coupon.policy.CouponIssuancePolicy
 import kr.hhplus.be.server.infrastructure.persistence.config.CreatedAndUpdatedAtAuditEntity
 import kr.hhplus.be.server.infrastructure.persistence.coupon.CouponIssuanceJpaEntity
 

@@ -1,7 +1,7 @@
 package kr.hhplus.be.server.application.port.out
 
 import kr.hhplus.be.server.domain.model.coupon.Coupon
-import java.util.Optional
+import java.util.*
 
 interface CouponOutput {
     fun findByIdAndMemberId(

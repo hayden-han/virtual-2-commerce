@@ -1,6 +1,5 @@
 package kr.hhplus.be.server.application.interactor.coupon
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kr.hhplus.be.server.application.port.out.CouponOutput
 import kr.hhplus.be.server.application.usecase.coupon.MyCouponUseCase
 import kr.hhplus.be.server.application.vo.CouponItemVO
@@ -15,8 +14,6 @@ import java.time.LocalDateTime
 class MyCouponInteractor(
     private val couponOutput: CouponOutput,
 ) : MyCouponUseCase {
-    private val logger = KotlinLogging.logger { }
-
     @Transactional(readOnly = true)
     override fun getMyCoupons(memberId: Long): List<CouponItemVO> =
         couponOutput.findAllByMemberId(memberId).map {
