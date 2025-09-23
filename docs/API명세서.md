@@ -21,9 +21,9 @@
 
 > | http code     | content-type                      | response                                    |
 > |---------------|-----------------------------------|---------------------------------------------|
-> | `200`         | `application/json`                | `{"balance": 50000}`                        |
-> | `400`         | `application/json`                | `{"code":"BB001","message":"회원ID가 필요합니다"}` |
-> | `401`         | `application/json`                | `{"code":"401","message":"인증실패"}`           |
+> | `200`         | `application/json`                | `{ "balanceId": 1, "availableAmount": 10000 }`                        |
+> | `400`         | `application/json`                | `{ "message": "X-Member-Id 헤더가 필요합니다." }` |
+> | `404`         | `application/json`                | `{ "message": "잔고정보를 찾을 수 없습니다." }` |
 
 ##### Example cURL
 
@@ -70,10 +70,9 @@
 
 > | http code     | content-type                      | response                                    |
 > |---------------|-----------------------------------|---------------------------------------------|
-> | `200`         | `application/json`                | `{"balance": 60000}`                        |
-> | `400`         | `application/json`                | `{"code":"BB001","message":"회원ID가 필요합니다"}`  |
-> | `401`         | `application/json`                | `{"code":"401","message":"인증실패"}`           |
-> | `404`         | `application/json`                | `{"code":"404","message":"잔액정보를 확인할수없습니다"}` |
+> | `200`         | `application/json`                | `{ "balanceId": 1, "availableAmount": 15000 }`                        |
+> | `400`         | `application/json`                | `{ "message": "X-Member-Id 헤더가 필요합니다." }`<br>`{ "message": "충전 금액은 0원보다 커야합니다." }`  |
+> | `404`         | `application/json`                | `{ "message": "잔고정보를 찾을 수 없습니다." }` |
 
 ##### Example cURL
 
@@ -100,13 +99,15 @@
 > |-----------|-----------|----------------|-------------------------------------|
 > | `page`    |  optional | int            | 페이지 번호 (기본값: 0)              |
 > | `size`    |  optional | int            | 페이지 크기 (기본값: 10)             |
+> | `sortBy`  |  optional | string         | 정렬 기준 (기본값: register)         |
+> | `descending` | optional | string        | 내림차순 여부 (기본값: desc)         |
 
 ##### Responses
 
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
-> | `200`         | `application/json`                | `[{"productList": [{"productId": 1, "productName": "상품명", "price": 10000, "stockQuantity": 100}]}]` |
-> | `400`         | `application/json`                | `{"code":"400","message":"잘못된 페이지 파라미터입니다"}`                   |
+> | `200`         | `application/json`                | `{ "rows": 10, "page": 0, "products": [ { "id": 1, "name": "상품명", "price": 10000, "stockQuantity": 100 } ] }` |
+> | `400`         | `application/json`                | `{ "message": "잘못된 파라미터입니다." }`                   |
 
 ##### Example cURL
 
@@ -121,23 +122,26 @@
 ### 인기 상품 조회
 
 <details>
- <summary><code>GET</code> <code><b>/api/v1/products/top-selling</b></code> <code>(최근 3일간 가장 많이 팔린 상위 5개 상품을 조회합니다)</code></summary>
+ <summary><code>GET</code> <code><b>/api/v1/products/top-selling</b></code> <code>(최근 n일간 가장 많이 팔린 상위 m개 상품을 조회합니다)</code></summary>
 
 ##### Parameters
 
-> None
+> | name      |  type     | data type      | description                         |
+> |-----------|-----------|----------------|-------------------------------------|
+> | `nDay`    |  optional | int            | 최근 n일 (기본값: 3)                |
+> | `mProduct`|  optional | int            | 상위 m개 (기본값: 5)                |
 
 ##### Responses
 
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
-> | `200`         | `application/json`                | `[{"productList": [{"productId": 1, "productName": "인기상품", "price": 20000, "stockQuantity": 50}]}]` |
-> | `500`         | `application/json`                | `{"code":"500","message":"인기 상품 조회 중 오류가 발생했습니다"}`            |
+> | `200`         | `application/json`                | `{ "count": 5, "products": [ { "id": 1, "name": "인기상품", "price": 20000, "stockQuantity": 50, "totalOrderQuantity": 10 } ] }` |
+> | `400`         | `application/json`                | `{ "message": "조회 기간 및 갯수는 0보다 커야합니다." }` |
 
 ##### Example cURL
 
 > ```bash
->  curl -X GET http://localhost:8080/api/v1/products/top-selling
+>  curl -X GET "http://localhost:8080/api/v1/products/top-selling?nDay=3&mProduct=5"
 > ```
 
 </details>
@@ -146,10 +150,10 @@
 
 ## 쿠폰 API
 
-### 선착순 쿠폰 발급
+### 쿠폰 발급
 
 <details>
- <summary><code>POST</code> <code><b>/api/v1/coupons/first-come-first-serve</b></code> <code>(선착순 쿠폰을 발급받습니다)</code></summary>
+ <summary><code>POST</code> <code><b>/api/v1/coupons/issuance</b></code> <code>(쿠폰을 발급받습니다)</code></summary>
 
 ##### Headers
 
@@ -157,27 +161,33 @@
 > |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
 > | X-Member-Id |  required | long   | 회원 ID  |
 
-##### Parameters
-
-> None
-
 ##### Request Body
 
-> None
+> | name      |  type     | data type               | description                                                           |
+> |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
+> | couponSummaryId |  required | long   | 쿠폰 요약 ID  |
+
+##### Request Body Example
+
+> ```json
+> {
+>   "couponSummaryId": 1
+> }
+> ```
 
 ##### Responses
 
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
-> | `200`         | `application/json`                | `{"id": 1, "name": "신규 회원 할인 쿠폰", "discountPercentage": 10, "expiredAt": "2024-12-31T23:59:59"}` |
-> | `400`         | `application/json`                | `{"code":"400","message":"회원 ID가 필요합니다"}`                        |
-> | `409`         | `application/json`                | `{"code":"409","message":"이미 쿠폰을 발급받으셨습니다"}`                   |
-> | `410`         | `application/json`                | `{"code":"410","message":"쿠폰이 모두 소진되었습니다"}`                     |
+> | `200`         | `application/json`                | `{ "couponId": 1, "expiredAt": "2025-12-31T23:59:59" }` |
+> | `409`         | `application/json`                | `{ "message": "쿠폰발급이 가능한 기간이 아닙니다." }`<br>`{ "message": "쿠폰발급수량이 부족합니다." }`<br>`{ "message": "중복발급이 제한된 쿠폰입니다." }` |
 
 ##### Example cURL
 
 > ```bash
->  curl -X POST -H "X-Member-Id: 1" http://localhost:8080/api/v1/coupons/first-come-first-serve
+>  curl -X POST -H "X-Member-Id: 1" -H "Content-Type: application/json" \
+>       --data '{"couponSummaryId": 1}' \
+>       http://localhost:8080/api/v1/coupons/issuance
 > ```
 
 </details>
@@ -195,17 +205,11 @@
 > |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
 > | X-Member-Id |  required | long   | 회원 ID  |
 
-##### Parameters
-
-> None
-
 ##### Responses
 
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
-> | `200`         | `application/json`                | `{"coupons": [{"id": 1, "name": "10% 할인 쿠폰", "discountPercentage": 10, "expiredAt": "2024-12-31T23:59:59", "usingAt": "2024-01-15T10:30:00"}]}` |
-> | `400`         | `application/json`                | `{"code":"400","message":"회원 ID가 필요합니다"}`                        |
-> | `401`         | `application/json`                | `{"code":"401","message":"인증 실패"}`                               |
+> | `200`         | `application/json`                | `{ "count": 2, "coupons": [ { "id": 1, "name": "SPRING_SALE", "discountPercentage": 10, "expiredAt": "2025-03-21T13:00:00", "usingAt": "2025-03-20T13:00:00" } ] }` |
 
 ##### Example cURL
 
@@ -219,10 +223,10 @@
 
 ## 주문 API
 
-### 주문하기
+### 주문 생성
 
 <details>
- <summary><code>POST</code> <code><b>/api/v1/orders</b></code> <code>(상품을 주문합니다)</code></summary>
+ <summary><code>POST</code> <code><b>/api/v1/orders</b></code> <code>(주문을 생성합니다)</code></summary>
 
 ##### Headers
 
@@ -230,24 +234,39 @@
 > |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
 > | X-Member-Id |  required | long   | 회원 ID  |
 
-##### Parameters
-
-> None
-
 ##### Request Body
 
 > | name      |  type     | data type               | description                                                           |
 > |-----------|-----------|-------------------------|-----------------------------------------------------------------------|
-> | productIdAndQuantityMap |  required | Map<Long, Long>   | 상품 ID와 수량 맵  |
+> | couponSummaryId | optional | long   | 쿠폰 요약 ID  |
+> | orderItems | required | array  | 주문 상품 목록  |
+> | paymentSummary | required | object | 결제 정보  |
+
+> orderItems 예시:
+> ```json
+> [
+>   { "productSummaryId": 1, "price": 10000, "quantity": 2 }
+> ]
+> ```
+> paymentSummary 예시:
+> ```json
+> { "method": "POINT", "totalAmount": 20000, "discountAmount": 2000, "chargeAmount": 18000 }
+> ```
 
 ##### Request Body Example
 
 > ```json
 > {
->   "productIdAndQuantityMap": {
->     "1": 2,
->     "2": 1,
->     "3": 5
+>   "couponSummaryId": 1,
+>   "orderItems": [
+>     { "productSummaryId": 1, "price": 1790000, "quantity": 1 },
+>     { "productSummaryId": 2, "price": 89000, "quantity": 1 }
+>   ],
+>   "paymentSummary": {
+>     "method": "POINT",
+>     "totalAmount": 1879000,
+>     "discountAmount": 187900,
+>     "chargeAmount": 1691100
 >   }
 > }
 > ```
@@ -256,20 +275,26 @@
 
 > | http code     | content-type                      | response                                                            |
 > |---------------|-----------------------------------|---------------------------------------------------------------------|
-> | `200`         | `application/json`                | `{"orderId": 12345}`                                               |
-> | `400`         | `application/json`                | `{"code":"400","message":"회원 ID가 필요합니다"}`                        |
-> | `402`         | `application/json`                | `{"code":"402","message":"잔액이 부족합니다"}`                          |
-> | `404`         | `application/json`                | `{"code":"404","message":"상품을 찾을 수 없습니다"}`                      |
-> | `409`         | `application/json`                | `{"code":"409","message":"재고가 부족합니다"}`                          |
+> | `200`         | `application/json`                | `{ "orderId": 1, "paymentSummary": { ... }, "orderItems": [ ... ] }` |
+> | `404`         | `application/json`                | `{ "message": "보유하지 않은 쿠폰입니다." }` |
+> | `400`         | `application/json`                | `{ "message": "지원하지 않는 결제수단입니다." }` |
+> | `409`         | `application/json`                | `{ "message": "잔고의 잔액이 부족합니다." }`<br>`{ "message": "'상품명'의 재고가 부족합니다." }` |
 
 ##### Example cURL
 
 > ```bash
->  curl -X POST -H "Content-Type: application/json" -H "X-Member-Id: 1" \
->       --data '{"productIdAndQuantityMap": {"1": 2, "2": 1}}' \
+>  curl -X POST -H "X-Member-Id: 1" -H "Content-Type: application/json" \
+>       --data '{ ... }' \
 >       http://localhost:8080/api/v1/orders
 > ```
 
 </details>
 
 ------------------------------------------------------------------------------------------
+
+## 에러 응답 패턴
+
+- 400 Bad Request: 필수 헤더/파라미터 누락, 잘못된 입력, 잘못된 금액, 잘못된 조회 파라미터, 지원하지 않는 결제수단 등
+- 404 Not Found: 존재하지 않는 리소스(잔고, 보유하지 않은 쿠폰 등)
+- 409 Conflict: 쿠폰 발급 정책 위반, 수량 초과, 기간 초과, 잔고 부족, 상품 재고 부족 등
+- 응답 예시: `{ "message": "상세 메시지" }`
