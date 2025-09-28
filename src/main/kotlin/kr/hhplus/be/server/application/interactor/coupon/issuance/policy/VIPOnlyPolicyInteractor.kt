@@ -2,8 +2,8 @@ package kr.hhplus.be.server.application.interactor.coupon.issuance.policy
 
 import kr.hhplus.be.server.application.port.out.MemberOutput
 import kr.hhplus.be.server.application.usecase.coupon.CouponIssuancePolicyUseCase
-import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import kr.hhplus.be.server.domain.exception.NotFoundResourceException
+import kr.hhplus.be.server.domain.exception.ForbiddenException
 import kr.hhplus.be.server.domain.model.coupon.CouponSummary
 import kr.hhplus.be.server.domain.model.coupon.policy.VIPOnlyPolicy
 import org.springframework.stereotype.Service
@@ -28,7 +28,7 @@ class VIPOnlyPolicyInteractor(
         }
 
         if (!member.isVIP()) {
-            throw ConflictResourceException(
+            throw ForbiddenException(
                 message = "VIP회원만 발급 가능한 쿠폰입니다.",
                 clue = mapOf("memberId" to memberId, "memberType" to member.memberType),
             )

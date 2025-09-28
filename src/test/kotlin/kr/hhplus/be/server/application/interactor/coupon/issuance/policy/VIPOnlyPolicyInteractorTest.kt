@@ -4,7 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kr.hhplus.be.server.application.port.out.MemberOutput
 import kr.hhplus.be.server.common.annotation.UnitTest
-import kr.hhplus.be.server.domain.exception.ConflictResourceException
+import kr.hhplus.be.server.domain.exception.ForbiddenException
 import kr.hhplus.be.server.domain.exception.NotFoundResourceException
 import kr.hhplus.be.server.domain.model.coupon.CouponSummary
 import kr.hhplus.be.server.domain.model.member.Member
@@ -47,7 +47,7 @@ class VIPOnlyPolicyInteractorTest {
         // when & then
         assertThatThrownBy {
             interactor.canIssue(memberId, couponSummary)
-        }.isInstanceOf(ConflictResourceException::class.java)
+        }.isInstanceOf(ForbiddenException::class.java)
             .hasMessageContaining("VIP회원만 발급 가능한 쿠폰입니다.")
     }
 

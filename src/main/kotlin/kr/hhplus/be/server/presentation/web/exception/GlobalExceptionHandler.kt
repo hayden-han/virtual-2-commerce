@@ -2,6 +2,7 @@ package kr.hhplus.be.server.presentation.web.exception
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kr.hhplus.be.server.domain.exception.ConflictResourceException
+import kr.hhplus.be.server.domain.exception.ForbiddenException
 import kr.hhplus.be.server.domain.exception.NotFoundResourceException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -49,6 +50,15 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         return ResponseEntity(
             ErrorResponse(e.message),
             HttpStatus.NOT_FOUND,
+        )
+    }
+
+    @ExceptionHandler(ForbiddenException::class)
+    fun handleForbiddenException(e: ForbiddenException): ResponseEntity<ErrorResponse> {
+
+        return ResponseEntity(
+            ErrorResponse(e.message),
+            HttpStatus.FORBIDDEN,
         )
     }
 }
