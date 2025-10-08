@@ -22,3 +22,5 @@ app:
   idempotency:
     header: Idempotency-Key
     ttl: PT10M
+    paths:
+      - /api/v1/orders

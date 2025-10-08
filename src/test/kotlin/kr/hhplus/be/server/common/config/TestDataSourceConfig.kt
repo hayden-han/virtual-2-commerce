@@ -11,6 +11,7 @@ import org.springframework.context.annotation.DependsOn
 import org.springframework.context.annotation.Primary
 import org.springframework.context.annotation.Profile
 import org.springframework.data.redis.connection.RedisConnectionFactory
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy
 import javax.sql.DataSource
 
@@ -62,4 +63,12 @@ class TestDataSourceConfig {
     fun dataSource(
         @Qualifier("routingDataSource") dataSource: DataSource,
     ): DataSource = LazyConnectionDataSourceProxy(dataSource)
+
+    @Bean
+    @DependsOn("TestDockerComposeContainer")
+    fun redisConnectionFactory(): RedisConnectionFactory =
+        LettuceConnectionFactory(
+            TestDockerComposeContainer.getRedisHost(),
+            TestDockerComposeContainer.getRedisMappedPort(),
+        )
 }

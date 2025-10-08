@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockkStatic
 import kr.hhplus.be.server.application.port.out.MyBalanceOutput
 import kr.hhplus.be.server.common.annotation.IntegrationTest
+import kr.hhplus.be.server.common.support.postJsonWithIdempotency
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -17,11 +18,10 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.util.UUID
 
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -96,11 +96,11 @@ class PlaceOrderControllerIntegrationTest {
             // when & then
             mockMvc
                 .perform(
-                    MockMvcRequestBuilders
-                        .post("/api/v1/orders")
-                        .header("X-Member-Id", memberId)
-                        .contentType("application/json")
-                        .content(requestBody),
+                    postJsonWithIdempotency(
+                        uri = "/api/v1/orders",
+                        body = requestBody,
+                        memberId = memberId,
+                    ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderId").value(1L) }
@@ -162,11 +162,11 @@ class PlaceOrderControllerIntegrationTest {
             // when & then
             mockMvc
                 .perform(
-                    MockMvcRequestBuilders
-                        .post("/api/v1/orders")
-                        .header("X-Member-Id", memberId)
-                        .contentType("application/json")
-                        .content(requestBody),
+                    postJsonWithIdempotency(
+                        uri = "/api/v1/orders",
+                        body = requestBody,
+                        memberId = memberId,
+                    ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderId").value(1L) }
@@ -219,11 +219,11 @@ class PlaceOrderControllerIntegrationTest {
             // when & then
             mockMvc
                 .perform(
-                    MockMvcRequestBuilders
-                        .post("/api/v1/orders")
-                        .header("X-Member-Id", memberId)
-                        .contentType("application/json")
-                        .content(requestBody),
+                    postJsonWithIdempotency(
+                        uri = "/api/v1/orders",
+                        body = requestBody,
+                        memberId = memberId,
+                    ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isNotFound)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("보유하지 않은 쿠폰입니다.") }
@@ -260,11 +260,11 @@ class PlaceOrderControllerIntegrationTest {
             // when & then
             mockMvc
                 .perform(
-                    MockMvcRequestBuilders
-                        .post("/api/v1/orders")
-                        .header("X-Member-Id", memberId)
-                        .contentType("application/json")
-                        .content(requestBody),
+                    postJsonWithIdempotency(
+                        uri = "/api/v1/orders",
+                        body = requestBody,
+                        memberId = memberId,
+                    ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isBadRequest)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("지원하지 않는 결제수단입니다.") }
@@ -302,11 +302,11 @@ class PlaceOrderControllerIntegrationTest {
             // when & then
             mockMvc
                 .perform(
-                    MockMvcRequestBuilders
-                        .post("/api/v1/orders")
-                        .header("X-Member-Id", memberId)
-                        .contentType("application/json")
-                        .content(requestBody),
+                    postJsonWithIdempotency(
+                        uri = "/api/v1/orders",
+                        body = requestBody,
+                        memberId = memberId,
+                    ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isConflict)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("잔고의 잔액이 부족합니다.") }
@@ -344,11 +344,11 @@ class PlaceOrderControllerIntegrationTest {
             // when & then
             mockMvc
                 .perform(
-                    MockMvcRequestBuilders
-                        .post("/api/v1/orders")
-                        .header("X-Member-Id", memberId)
-                        .contentType("application/json")
-                        .content(requestBody),
+                    postJsonWithIdempotency(
+                        uri = "/api/v1/orders",
+                        body = requestBody,
+                        memberId = memberId,
+                    ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isConflict)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("'신지모루 액정필름'의 재고가 부족합니다.") }
@@ -356,6 +356,62 @@ class PlaceOrderControllerIntegrationTest {
             // 잔고유지 검증
             val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
             assertThat(memberBalance.balance).isEqualTo(balance)
+        }
+
+        @Test
+        @DisplayName("동일한 Idempotency-Key로 재요청 시 캐싱된 응답을 반환한다")
+        fun placeOrder_ReplayedRequest_ReturnsCachedResponse() {
+            val memberId = 4L
+            val requestBody =
+                """
+                {
+                  "orderItems": [
+                    {
+                      "productSummaryId": 1,
+                      "quantity": 1,
+                      "price": 1790000
+                    }
+                  ],
+                  "paymentSummary": {
+                    "method": "POINT",
+                    "totalAmount": 1790000,
+                    "discountAmount": 0,
+                    "chargeAmount": 1790000
+                  }
+                }
+                """.trimIndent()
+
+            val idempotencyKey = UUID.randomUUID().toString()
+
+            val firstResponse =
+                mockMvc
+                    .perform(
+                        postJsonWithIdempotency(
+                            uri = "/api/v1/orders",
+                            body = requestBody,
+                            memberId = memberId,
+                            idempotencyKey = idempotencyKey,
+                        ),
+                    ).andExpect(MockMvcResultMatchers.status().isOk)
+                    .andReturn()
+                    .response
+                    .contentAsString
+
+            val secondResponse =
+                mockMvc
+                    .perform(
+                        postJsonWithIdempotency(
+                            uri = "/api/v1/orders",
+                            body = requestBody,
+                            memberId = memberId,
+                            idempotencyKey = idempotencyKey,
+                        ),
+                    ).andExpect(MockMvcResultMatchers.status().isOk)
+                    .andReturn()
+                    .response
+                    .contentAsString
+
+            assertThat(secondResponse).isEqualTo(firstResponse)
         }
     }
 }
