@@ -1,5 +1,14 @@
 version: '3'
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - appnet
+
   mysql-master:
     image: mysql:8.0
     container_name: mysql-master
@@ -21,10 +30,10 @@ services:
       --default-authentication-plugin=mysql_native_password
     volumes:
       - ./data/mysql-master/:/var/lib/mysql
-      - ./init/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./init/schema.sql:/docker-entrypoint-initdb.d/00-schema.sql
       - ./init/default-member.sql:/docker-entrypoint-initdb.d/01-default-member.sql
     networks:
-      - mysqlnet
+      - appnet
 
   mysql-slave:
     image: mysql:8.0
@@ -50,11 +59,10 @@ services:
       - mysql-master
     volumes:
       - ./data/mysql-slave/:/var/lib/mysql
-      - ./init/local/init-slave.sh:/docker-entrypoint-initdb.d/init-slave.sh
-      - ./init/default-member.sql:/docker-entrypoint-initdb.d/01-default-member.sql
+      - ./init/local/init-slave.sh:/docker-entrypoint-initdb.d/00-init-slave.sh
     networks:
-      - mysqlnet
+      - appnet
 
 networks:
-  mysqlnet:
+  appnet:
     driver: bridge

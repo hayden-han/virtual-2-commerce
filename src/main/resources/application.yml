@@ -17,3 +17,8 @@ kafka:
   group-id: "virtual-2-commerce-group"
   place-order-complete:
     topic: "place-order-complete"
+
+app:
+  idempotency:
+    header: Idempotency-Key
+    ttl: PT10M

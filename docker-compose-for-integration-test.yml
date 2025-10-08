@@ -1,5 +1,13 @@
 version: '3'
 services:
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - testnet
+
   mysql-test-master:
     image: mysql:8.0
     ports:
@@ -23,7 +31,7 @@ services:
       - ./init/schema.sql:/docker-entrypoint-initdb.d/00-init-master.sql
       - ./init/default-member.sql:/docker-entrypoint-initdb.d/01-default-member.sql
     networks:
-      - mysqlnet
+      - testnet
 
   mysql-test-slave:
     image: mysql:8.0
@@ -50,8 +58,8 @@ services:
       - ./data/mysql-test-slave/:/var/lib/mysql
       - ./init/test/init-slave.sh:/docker-entrypoint-initdb.d/00-init-slave.sh
     networks:
-      - mysqlnet
+      - testnet
 
 networks:
-  mysqlnet:
+  testnet:
     driver: bridge

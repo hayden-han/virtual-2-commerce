@@ -23,8 +23,8 @@ Kotlin 2.1과 Spring Boot 3.4로 구축한 전자상거래 백엔드 애플리�
 
 ## 기술 스택
 - Kotlin 2.1, Java 21
-- Spring Boot 3.4 (Web, Data JPA, Actuator, Kafka)
-- MySQL 8.0, JPA/Hibernate, HikariCP
+- Spring Boot 3.4 (Web, Data JPA/Redis, Actuator, Kafka)
+- MySQL 8.0, Redis 7, JPA/Hibernate, HikariCP
 - Kotlin Logging, SpringDoc OpenAPI
 - Docker Compose, Testcontainers, MockK
 
@@ -39,6 +39,7 @@ Kotlin 2.1과 Spring Boot 3.4로 구축한 전자상거래 백엔드 애플리�
    ```bash
    docker-compose up -d
    ```
+   Redis 7과 MySQL 마스터/슬레이브가 함께 기동됩니다.
 2. 애플리케이션 실행:
    ```bash
    ./gradlew bootRun
