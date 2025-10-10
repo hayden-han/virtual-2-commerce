@@ -1,6 +1,8 @@
 package kr.hhplus.be.server.presentation.web.balance
 
+import kr.hhplus.be.server.application.port.out.MyBalanceOutput
 import kr.hhplus.be.server.common.annotation.IntegrationTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -26,6 +28,9 @@ class MyBalanceControllerIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    @Autowired
+    private lateinit var memberBalanceOutput: MyBalanceOutput
 
     @Nested
     @DisplayName("내 잔고 조회(GET /api/v1/balances/me)")
@@ -53,6 +58,9 @@ class MyBalanceControllerIntegrationTest {
                 ).andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.balanceId").value(balanceId))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.availableAmount").value(availableAmount))
+
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(availableAmount)
         }
 
         @Test
@@ -88,20 +96,21 @@ class MyBalanceControllerIntegrationTest {
         @ParameterizedTest
         @CsvSource(
             value = [
-                "1, 1, 15000",
-                "2, 2, 30000",
-                "3, 3, 20000",
+                "1, 1, 10000",
+                "2, 2, 25000",
+                "3, 3, 15000",
             ],
         )
         @DisplayName("존재하는 잔고에 요청한 금액만큼 잔액을 충전한다")
         fun rechargeMyBalance_success(
             memberId: Long,
             balanceId: Long,
-            rechargedAmount: Long,
+            balance: Long,
         ) {
             // given
             val chargeAmount = 5000
             val requestBody = "{\"chargeAmount\":$chargeAmount}"
+            val rechargedAmount = balance + chargeAmount
 
             // when & then
             mockMvc
@@ -114,6 +123,9 @@ class MyBalanceControllerIntegrationTest {
                 ).andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.balanceId").value(balanceId) }
                 .andExpect { MockMvcResultMatchers.jsonPath("$.availableAmount").value(rechargedAmount) }
+
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(rechargedAmount)
         }
 
         @Test

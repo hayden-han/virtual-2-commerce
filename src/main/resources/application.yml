@@ -6,7 +6,7 @@ spring:
   jpa:
     open-in-view: false
     show-sql: false
-    generate-ddl: true
+    generate-ddl: false
     hibernate:
       ddl-auto: none
     properties:

@@ -2,7 +2,9 @@ package kr.hhplus.be.server.presentation.web.order
 
 import io.mockk.every
 import io.mockk.mockkStatic
+import kr.hhplus.be.server.application.port.out.MyBalanceOutput
 import kr.hhplus.be.server.common.annotation.IntegrationTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -13,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.jdbc.Sql
+import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers
@@ -23,14 +26,19 @@ import java.time.LocalDateTime
 @IntegrationTest
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Transactional
-@Sql(value = ["/sql/place-order.sql"])
+@SqlGroup(
+    Sql(value = ["/sql/place-order-setup.sql"], executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD),
+    Sql(value = ["/sql/place-order-cleanup.sql"], executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD),
+)
 class PlaceOrderControllerIntegrationTest {
     @LocalServerPort
     private var port: Int = 0
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    @Autowired
+    private lateinit var memberBalanceOutput: MyBalanceOutput
 
     private val fixedNow = LocalDateTime.of(2025, 6, 18, 12, 59, 59)
 
@@ -53,6 +61,8 @@ class PlaceOrderControllerIntegrationTest {
         fun placeOrder_Success() {
             // given
             val memberId = 4L
+            val balance = 2000000L
+            val chargeAmount = 1712700L
             val requestBody =
                 """
                 {
@@ -76,9 +86,9 @@ class PlaceOrderControllerIntegrationTest {
                   ],
                   "paymentSummary": {
                     "method": "POINT",
-                    "totalAmount": 1909000,
-                    "discountAmount": 190900,
-                    "chargeAmount": 1718100
+                    "totalAmount": 1903000,
+                    "discountAmount": 190300,
+                    "chargeAmount": $chargeAmount
                   }
                 }
                 """.trimIndent()
@@ -108,6 +118,10 @@ class PlaceOrderControllerIntegrationTest {
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L) }
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000) }
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2) }
+
+            // 잔고 검증
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(balance - chargeAmount)
         }
 
         @Test
@@ -115,6 +129,8 @@ class PlaceOrderControllerIntegrationTest {
         fun placeOrder_WithoutCoupon_Success() {
             // given
             val memberId = 4L
+            val balance = 2000000L
+            val chargeAmount = 1903000L
             val requestBody =
                 """
                 {
@@ -137,9 +153,9 @@ class PlaceOrderControllerIntegrationTest {
                   ],
                   "paymentSummary": {
                     "method": "POINT",
-                    "totalAmount": 1909000,
+                    "totalAmount": 1903000,
                     "discountAmount": 0,
-                    "chargeAmount": 1909000
+                    "chargeAmount": $chargeAmount
                   }
                 }
                 """.trimIndent()
@@ -168,6 +184,10 @@ class PlaceOrderControllerIntegrationTest {
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L) }
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000) }
                 .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2) }
+
+            // 잔고 검증
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(balance - chargeAmount)
         }
 
         @Test
@@ -175,6 +195,7 @@ class PlaceOrderControllerIntegrationTest {
         fun placeOrder_InvalidCoupon_Fail() {
             // given
             val memberId = 4L
+            val balance = 2000000L
             val requestBody =
                 """
                 {
@@ -206,6 +227,10 @@ class PlaceOrderControllerIntegrationTest {
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isNotFound)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("보유하지 않은 쿠폰입니다.") }
+
+            // 잔고유지 검증
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(balance)
         }
 
         @Test
@@ -213,6 +238,7 @@ class PlaceOrderControllerIntegrationTest {
         fun placeOrder_UnsupportedPaymentMethod_Fail() {
             // given
             val memberId = 4L
+            val balance = 2000000L
             val requestBody =
                 """
                 {
@@ -242,6 +268,10 @@ class PlaceOrderControllerIntegrationTest {
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isBadRequest)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("지원하지 않는 결제수단입니다.") }
+
+            // 잔고유지 검증
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(balance)
         }
 
         @Test
@@ -249,6 +279,7 @@ class PlaceOrderControllerIntegrationTest {
         fun placeOrder_InsufficientBalance_Fail() {
             // given
             val memberId = 4L
+            val balance = 2000000L
             val requestBody =
                 """
                 {
@@ -279,6 +310,10 @@ class PlaceOrderControllerIntegrationTest {
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isConflict)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("잔고의 잔액이 부족합니다.") }
+
+            // 잔고유지 검증
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(balance)
         }
 
         @Test
@@ -286,6 +321,7 @@ class PlaceOrderControllerIntegrationTest {
         fun placeOrder_InsufficientProductQuantity_Fail() {
             // given
             val memberId = 4L
+            val balance = 2000000L
             val requestBody =
                 """
                 {
@@ -316,6 +352,10 @@ class PlaceOrderControllerIntegrationTest {
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isConflict)
                 .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("'신지모루 액정필름'의 재고가 부족합니다.") }
+
+            // 잔고유지 검증
+            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            assertThat(memberBalance.balance).isEqualTo(balance)
         }
     }
 }
