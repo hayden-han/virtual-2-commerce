@@ -20,16 +20,28 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/coupons/issuance")
 class CouponIssuanceController(
     private val couponIssuanceUseCase: CouponIssuanceUseCase,
+    private val idempotentRequestResponseRecorder: IdempotentRequestResponseRecorder,
 ) {
     @PostMapping
     fun issue(
         @RequestHeader("X-Member-Id") memberId: Long,
         @RequestBody requestData: CouponIssuanceRequest,
+        @IdempotentContext context: IdempotentRequestContext<CouponIssuanceResponse>,
     ): CouponIssuanceResponse =
-        CouponIssuanceResponse(
-            couponIssuanceUseCase.issue(
-                memberId = memberId,
-                couponSummaryId = requestData.couponSummaryId,
-            ),
-        )
+        context.getResponseOrElse {
+            val coupon =
+                couponIssuanceUseCase.issue(
+                    memberId = memberId,
+                    couponSummaryId = requestData.couponSummaryId,
+                )
+
+            val response = CouponIssuanceResponse(coupon)
+
+            idempotentRequestResponseRecorder.recordSuccess(
+                cacheKey = context.cacheKey,
+                responseBody = response,
+                statusCode = HttpStatus.OK.value(),
+                responseType = CouponIssuanceResponse::class.java,
+            )
+        }
 }

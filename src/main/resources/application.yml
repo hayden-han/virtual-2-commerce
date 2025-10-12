@@ -24,3 +24,4 @@ app:
     ttl: PT10M
     paths:
       - /api/v1/orders
+      - /api/v1/coupons/issuance
