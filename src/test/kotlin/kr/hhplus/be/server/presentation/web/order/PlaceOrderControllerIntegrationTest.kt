@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.presentation.web.order
 
+import com.jayway.jsonpath.JsonPath
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
@@ -115,37 +116,42 @@ class PlaceOrderControllerIntegrationTest {
                 """.trimIndent()
 
             // when & then
-            mockMvc
-                .perform(
-                    postJsonWithIdempotency(
-                        uri = "/api/v1/orders",
-                        body = requestBody,
-                        memberId = memberId,
-                    ),
-                ).andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderId").value(1L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.method").value("POINT") }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.totalAmount").value(1909000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.discountAmount").value(190900) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.chargeAmount").value(1718100) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems.length()").value(3) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[0].price").value(1790000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[0].quantity").value(1) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(2L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[1].price").value(89000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[1].quantity").value(1) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2) }
+            val mvcResult =
+                mockMvc
+                    .perform(
+                        postJsonWithIdempotency(
+                            uri = "/api/v1/orders",
+                            body = requestBody,
+                            memberId = memberId,
+                        ),
+                    ).andDo(MockMvcResultHandlers.print())
+                    .andExpect(MockMvcResultMatchers.status().isOk)
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderId").isNumber)
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.method").value("POINT"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.totalAmount").value(1903000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.discountAmount").value(190300))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.chargeAmount").value(1712700))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems.length()").value(3))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].price").value(1790000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].quantity").value(1))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(2L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].price").value(89000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].quantity").value(1))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2))
+                    .andReturn()
+
+            val responseBody = mvcResult.response.contentAsString
+            val orderId = JsonPath.read<Number>(responseBody, "$.orderId").toLong()
 
             // 잔고 검증
             val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
             assertThat(memberBalance.balance).isEqualTo(balance - chargeAmount)
 
             // 결제정보 검증
-            val payment = paymentOutput.findByOrderSummaryId(1L).get()
+            val payment = paymentOutput.findByOrderSummaryId(orderId).get()
             assertThat(payment.method).isEqualTo(PaymentMethod.POINT)
             assertThat(payment.totalAmount).isEqualTo(1903000L)
             assertThat(payment.discountAmount).isEqualTo(190300L)
@@ -165,7 +171,7 @@ class PlaceOrderControllerIntegrationTest {
             assertThat(coupon.usingAt).isEqualTo(fixedNow)
 
             // 주문정보 검증
-            val orderSummary = orderSummaryOutput.findByIdWithOrderItems(1L).get()
+            val orderSummary = orderSummaryOutput.findByIdWithOrderItems(orderId).get()
             assertThat(orderSummary.memberId).isEqualTo(memberId)
             assertThat(orderSummary.orderItems).hasSize(3)
             assertThat(orderSummary.orderItems).allSatisfy {
@@ -226,41 +232,46 @@ class PlaceOrderControllerIntegrationTest {
                 }
                 """.trimIndent()
             // when & then
-            mockMvc
-                .perform(
-                    postJsonWithIdempotency(
-                        uri = "/api/v1/orders",
-                        body = requestBody,
-                        memberId = memberId,
-                    ),
-                ).andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderId").value(1L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.method").value("POINT") }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.totalAmount").value(1909000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.discountAmount").value(0) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.paymentSummary.chargeAmount").value(1909000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems.length()").value(3) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[0].price").value(1790000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[0].quantity").value(1) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(2L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[1].price").value(89000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[1].quantity").value(1) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2) }
+            val mvcResult =
+                mockMvc
+                    .perform(
+                        postJsonWithIdempotency(
+                            uri = "/api/v1/orders",
+                            body = requestBody,
+                            memberId = memberId,
+                        ),
+                    ).andDo(MockMvcResultHandlers.print())
+                    .andExpect(MockMvcResultMatchers.status().isOk)
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderId").isNumber)
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.method").value("POINT"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.totalAmount").value(1903000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.discountAmount").value(0))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.chargeAmount").value(1903000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems.length()").value(3))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].price").value(1790000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].quantity").value(1))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(2L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].price").value(89000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].quantity").value(1))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2))
+                    .andReturn()
+
+            val responseBody = mvcResult.response.contentAsString
+            val orderId = JsonPath.read<Number>(responseBody, "$.orderId").toLong()
 
             // 잔고 검증
             val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
             assertThat(memberBalance.balance).isEqualTo(balance - chargeAmount)
 
             // 결제정보 검증
-            val payment = paymentOutput.findByOrderSummaryId(1L).get()
+            val payment = paymentOutput.findByOrderSummaryId(orderId).get()
             assertThat(payment.method).isEqualTo(PaymentMethod.POINT)
             assertThat(payment.totalAmount).isEqualTo(1903000L)
-            assertThat(payment.discountAmount).isEqualTo(190300L)
-            assertThat(payment.chargeAmount).isEqualTo(1712700L)
+            assertThat(payment.discountAmount).isEqualTo(0L)
+            assertThat(payment.chargeAmount).isEqualTo(1903000L)
 
             // 상품 재고 검증
             val products =
@@ -276,7 +287,7 @@ class PlaceOrderControllerIntegrationTest {
             assertThat(coupon.usingAt).isNull()
 
             // 주문정보 검증
-            val orderSummary = orderSummaryOutput.findByIdWithOrderItems(1L).get()
+            val orderSummary = orderSummaryOutput.findByIdWithOrderItems(orderId).get()
             assertThat(orderSummary.memberId).isEqualTo(memberId)
             assertThat(orderSummary.orderItems).hasSize(3)
             assertThat(orderSummary.orderItems).allSatisfy {
@@ -337,7 +348,7 @@ class PlaceOrderControllerIntegrationTest {
                     ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isNotFound)
-                .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("보유하지 않은 쿠폰입니다.") }
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("보유하지 않은 쿠폰입니다."))
 
             // 잔고유지 검증
             val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
@@ -378,7 +389,7 @@ class PlaceOrderControllerIntegrationTest {
                     ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isBadRequest)
-                .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("지원하지 않는 결제수단입니다.") }
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("지원하지않는 결제수단입니다."))
 
             // 잔고유지 검증
             val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
@@ -420,7 +431,7 @@ class PlaceOrderControllerIntegrationTest {
                     ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isConflict)
-                .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("잔고의 잔액이 부족합니다.") }
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("잔고의 금액이 부족합니다."))
 
             // 잔고유지 검증
             val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
@@ -462,7 +473,11 @@ class PlaceOrderControllerIntegrationTest {
                     ),
                 ).andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isConflict)
-                .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("'신지모루 액정필름'의 재고가 부족합니다.") }
+                .andExpect(
+                    MockMvcResultMatchers
+                        .jsonPath("$.message")
+                        .value("'신지모루 액정필름'의 재고가 부족합니다."),
+                )
 
             // 잔고유지 검증
             val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()

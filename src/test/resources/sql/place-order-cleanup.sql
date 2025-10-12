@@ -16,3 +16,14 @@ DELETE FROM coupon_summary WHERE id = 1;
 
 -- 상품 데이터 삭제
 DELETE FROM product_summary WHERE id IN (1, 2, 3);
+
+-- 주문정보 및 결제정보 삭제
+DELETE FROM order_item WHERE (
+    SELECT id FROM order_summary WHERE member_id = 4
+);
+
+DELETE FROM payment_summary WHERE order_summary_id IN (
+    SELECT id FROM order_summary WHERE member_id = 4
+);
+
+DELETE FROM order_summary WHERE member_id = 4;
