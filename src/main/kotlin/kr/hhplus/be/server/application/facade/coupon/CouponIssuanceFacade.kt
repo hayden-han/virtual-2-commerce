@@ -49,7 +49,7 @@ class CouponIssuanceFacade(
 
         val issuance =
             issuanceOutput
-                .findByCouponSummaryId(couponSummaryId)
+                .findByCouponSummaryIdWithLock(couponSummaryId)
                 .orElseThrow {
                     NotFoundResourceException(
                         message = "요청하신 쿠폰의 발급정보를 찾을수없습니다.",

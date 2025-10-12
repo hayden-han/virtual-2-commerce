@@ -11,10 +11,10 @@ import java.util.Optional
 class CouponIssuancePersistenceAdapter(
     private val couponIssuanceJpaRepository: CouponIssuanceJpaRepository,
 ) : CouponIssuanceOutput {
-    override fun findByCouponSummaryId(couponSummaryId: Long): Optional<CouponIssuance> {
-        return couponIssuanceJpaRepository.findByCouponSummaryId(couponSummaryId)
+    override fun findByCouponSummaryIdWithLock(couponSummaryId: Long): Optional<CouponIssuance> =
+        couponIssuanceJpaRepository
+            .findByCouponSummaryIdWithLock(couponSummaryId)
             .map(CouponIssuanceJpaEntityMapper::toDomain)
-    }
 
     override fun save(domain: CouponIssuance): CouponIssuance {
         val savedEntity =
