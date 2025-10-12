@@ -5,7 +5,7 @@ import kr.hhplus.be.server.domain.model.coupon.CouponIssuance
 import kr.hhplus.be.server.infrastructure.persistence.coupon.CouponIssuanceJpaRepository
 import kr.hhplus.be.server.infrastructure.persistence.coupon.mapper.CouponIssuanceJpaEntityMapper
 import org.springframework.stereotype.Component
-import java.util.*
+import java.util.Optional
 
 @Component
 class CouponIssuancePersistenceAdapter(
@@ -16,10 +16,11 @@ class CouponIssuancePersistenceAdapter(
             .map(CouponIssuanceJpaEntityMapper::toDomain)
     }
 
-    override fun save(couponIssuance: CouponIssuance): CouponIssuance {
-        val savedEntity = CouponIssuanceJpaEntityMapper
-            .toEntity(couponIssuance)
-            .let(couponIssuanceJpaRepository::save)
+    override fun save(domain: CouponIssuance): CouponIssuance {
+        val savedEntity =
+            CouponIssuanceJpaEntityMapper
+                .toEntity(domain)
+                .let(couponIssuanceJpaRepository::save)
 
         return CouponIssuanceJpaEntityMapper.toDomain(savedEntity)
     }

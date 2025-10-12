@@ -2,6 +2,7 @@ package kr.hhplus.be.server.presentation.web.order
 
 import io.mockk.every
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kr.hhplus.be.server.application.port.out.MyBalanceOutput
 import kr.hhplus.be.server.common.annotation.IntegrationTest
 import kr.hhplus.be.server.common.config.NoOpEventPublisherConfig
@@ -53,7 +54,7 @@ class PlaceOrderControllerIntegrationTest {
 
     @AfterEach
     fun tearDown() {
-        io.mockk.unmockkStatic(LocalDateTime::class)
+        unmockkStatic(LocalDateTime::class)
     }
 
     @Nested
