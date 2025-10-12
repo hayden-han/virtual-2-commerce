@@ -53,6 +53,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.springframework.retry:spring-retry")
 
     // DB
     runtimeOnly("com.mysql:mysql-connector-j")
