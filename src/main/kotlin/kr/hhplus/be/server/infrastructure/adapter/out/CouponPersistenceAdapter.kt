@@ -27,7 +27,7 @@ class CouponPersistenceAdapter(
 
     override fun findAllByMemberId(memberId: Long): List<Coupon> =
         couponJpaRepository
-            .findAllByMemberId(memberId)
+            .findAllWithSummaryByMemberId(memberId)
             .map {
                 CouponJpaEntityMapper.toDomain(
                     entity = it,
