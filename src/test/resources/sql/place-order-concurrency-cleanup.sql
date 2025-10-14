@@ -1,5 +1,5 @@
 -- 테스트에서 생성된 결제 및 주문 데이터 삭제
-DELETE FROM payment_summary WHERE member_id = 2004;
+DELETE FROM payment_summary WHERE order_summary_id IN (SELECT id FROM order_summary WHERE member_id = 2004);
 DELETE FROM order_item WHERE order_summary_id IN (SELECT id FROM order_summary WHERE member_id = 2004);
 DELETE FROM order_summary WHERE member_id = 2004;
 

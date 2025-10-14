@@ -71,7 +71,6 @@ class PlaceOrderFacade(
 
         val paymentSummary =
             generatePaymentUseCase.generatePaymentSummary(
-                member = member,
                 coupon = coupon,
                 orderSummary = orderSummary,
                 method = requestPaymentSummary.method,

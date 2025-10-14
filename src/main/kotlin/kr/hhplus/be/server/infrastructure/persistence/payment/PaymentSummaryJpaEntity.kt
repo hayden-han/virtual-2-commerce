@@ -23,8 +23,6 @@ class PaymentSummaryJpaEntity(
     @Column(nullable = false)
     val chargeAmount: Long,
     @Column(nullable = false)
-    val memberId: Long,
-    @Column(nullable = false)
     val orderSummaryId: Long,
     @Column
     val couponId: Long?,
