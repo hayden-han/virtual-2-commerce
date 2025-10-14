@@ -2,7 +2,7 @@ package kr.hhplus.be.server.presentation.web.idempotency
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import kr.hhplus.be.server.application.port.out.CachedResponse
-import kr.hhplus.be.server.application.port.out.IdempotentRequestOutPort
+import kr.hhplus.be.server.application.usecase.idempotency.IdempotentRequestUseCase
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class IdempotentRequestResponseRecorder(
-    private val idempotentRequestOutPort: IdempotentRequestOutPort,
+    private val idempotentRequestUseCase: IdempotentRequestUseCase,
     private val objectMapper: ObjectMapper,
 ) {
     fun <T : Any> recordSuccess(
@@ -20,20 +20,22 @@ class IdempotentRequestResponseRecorder(
         statusCode: Int,
         responseType: Class<T>,
     ): T {
-        val existing = idempotentRequestOutPort.find(cacheKey)?.response
-        if (existing != null) {
-            return objectMapper.readValue(existing.body, responseType)
-        }
         val serialized = objectMapper.writeValueAsString(responseBody)
-        idempotentRequestOutPort.saveSuccess(
-            key = cacheKey,
-            response =
-                CachedResponse(
-                    statusCode = statusCode,
-                    contentType = MediaType.APPLICATION_JSON_VALUE,
-                    body = serialized,
-                ),
-        )
-        return responseBody
+        val cached =
+            idempotentRequestUseCase.recordSuccessIfAbsent(
+                key = cacheKey,
+                response =
+                    CachedResponse(
+                        statusCode = statusCode,
+                        contentType = MediaType.APPLICATION_JSON_VALUE,
+                        body = serialized,
+                    ),
+            )
+
+        return if (cached.body == serialized) {
+            responseBody
+        } else {
+            objectMapper.readValue(cached.body, responseType)
+        }
     }
 }

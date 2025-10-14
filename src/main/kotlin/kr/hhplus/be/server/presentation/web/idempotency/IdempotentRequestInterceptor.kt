@@ -3,8 +3,8 @@ package kr.hhplus.be.server.presentation.web.idempotency
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import kr.hhplus.be.server.application.port.out.IdempotentRequestOutPort
-import kr.hhplus.be.server.application.port.out.IdempotentRequestState
+import kr.hhplus.be.server.application.interactor.idempotency.IdempotentRequestDecision
+import kr.hhplus.be.server.application.usecase.idempotency.IdempotentRequestUseCase
 import kr.hhplus.be.server.infrastructure.config.IdempotentRequestProperties
 import kr.hhplus.be.server.presentation.web.exception.ErrorResponse
 import kr.hhplus.be.server.presentation.web.idempotency.generator.IdempotentRequestKeyContext
@@ -27,7 +27,7 @@ import kotlin.text.Charsets
  */
 @Component
 class IdempotentRequestInterceptor(
-    private val idempotentRequestOutPort: IdempotentRequestOutPort,
+    private val idempotentRequestUseCase: IdempotentRequestUseCase,
     private val idempotentRequestProperties: IdempotentRequestProperties,
     private val keyGenerator: IdempotentRequestKeyGenerator,
     private val objectMapper: ObjectMapper,
@@ -58,26 +58,21 @@ class IdempotentRequestInterceptor(
                 ),
             )
 
-        when (val record = idempotentRequestOutPort.find(cacheKey)) {
-            null -> {
-                if (idempotentRequestOutPort.saveInProgress(cacheKey)) {
-                    request.setAttribute(IdempotentRequestAttributes.REQUEST_ATTRIBUTE_CACHE_KEY, cacheKey)
-                    return true
-                }
-                response.writeError(HttpStatus.CONFLICT, "중복된 요청이 이미 처리중입니다.")
-                return false
+        return when (val decision = idempotentRequestUseCase.tryAcquire(cacheKey)) {
+            IdempotentRequestDecision.Acquired -> {
+                request.setAttribute(IdempotentRequestAttributes.REQUEST_ATTRIBUTE_CACHE_KEY, cacheKey)
+                true
             }
 
-            else -> {
-                val alreadyCompleted = record.state == IdempotentRequestState.COMPLETED && record.response != null
-                if (alreadyCompleted) {
-                    request.setAttribute(IdempotentRequestAttributes.REQUEST_ATTRIBUTE_CACHED_RESPONSE, record.response)
-                    request.setAttribute(IdempotentRequestAttributes.REQUEST_ATTRIBUTE_CACHE_KEY, cacheKey)
-                    return true
-                }
-
+            IdempotentRequestDecision.AlreadyInProgress -> {
                 response.writeError(HttpStatus.CONFLICT, "중복된 요청이 이미 처리중입니다.")
-                return false
+                false
+            }
+
+            is IdempotentRequestDecision.Completed -> {
+                request.setAttribute(IdempotentRequestAttributes.REQUEST_ATTRIBUTE_CACHED_RESPONSE, decision.response)
+                request.setAttribute(IdempotentRequestAttributes.REQUEST_ATTRIBUTE_CACHE_KEY, cacheKey)
+                true
             }
         }
     }
@@ -91,7 +86,7 @@ class IdempotentRequestInterceptor(
         val cacheKey = request.getAttribute(IdempotentRequestAttributes.REQUEST_ATTRIBUTE_CACHE_KEY) as? String ?: return
 
         if (!response.isOK()) {
-            idempotentRequestOutPort.delete(cacheKey)
+            idempotentRequestUseCase.releaseOnFailure(cacheKey)
         }
     }
 
