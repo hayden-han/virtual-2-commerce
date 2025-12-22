@@ -82,26 +82,26 @@ class PlaceOrderControllerIntegrationTest {
         @DisplayName("쿠폰을 사용한 상품주문에 성공한다")
         fun placeOrder_Success() {
             // given
-            val memberId = 4L
+            val memberId = 1001L
             val balance = 2000000L
             val chargeAmount = 1712700L
             val requestBody =
                 """
                 {
-                  "couponSummaryId": 1,
+                  "couponSummaryId": 1001,
                   "orderItems": [
                     {
-                      "productSummaryId": 1,
+                      "productSummaryId": 1001,
                       "quantity": 1,
                       "price": 1790000
                     },
                     {
-                      "productSummaryId": 2,
+                      "productSummaryId": 1002,
                       "quantity": 1,
                       "price": 89000
                     },
                     {
-                      "productSummaryId": 3,
+                      "productSummaryId": 1003,
                       "quantity": 2,
                       "price": 12000
                     }
@@ -132,13 +132,13 @@ class PlaceOrderControllerIntegrationTest {
                     .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.discountAmount").value(190300))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.chargeAmount").value(1712700))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems.length()").value(3))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1001L))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].price").value(1790000))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].quantity").value(1))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(2L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(1002L))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].price").value(89000))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].quantity").value(1))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(1003L))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2))
                     .andReturn()
@@ -160,14 +160,14 @@ class PlaceOrderControllerIntegrationTest {
             // 상품 재고 검증
             val products =
                 productSummaryOutput
-                    .findAllInIds(listOf(1L, 2L, 3L))
+                    .findAllInIds(listOf(1001L, 1002L, 1003L))
                     .sortedBy { it.id }
             assertThat(products[0].stockQuantity).isEqualTo(9) // 기존 10개
             assertThat(products[1].stockQuantity).isEqualTo(19) // 기존 20개
             assertThat(products[2].stockQuantity).isEqualTo(98) // 기존 100개
 
             // 쿠폰 사용 검증
-            val coupon = couponOutput.findByCouponSummaryIdAndMemberId(1L, 4L).get()
+            val coupon = couponOutput.findByCouponSummaryIdAndMemberId(1001L, 1001L).get()
             assertThat(coupon.usingAt).isEqualTo(fixedNow)
 
             // 주문정보 검증
@@ -176,17 +176,17 @@ class PlaceOrderControllerIntegrationTest {
             assertThat(orderSummary.orderItems).hasSize(3)
             assertThat(orderSummary.orderItems).allSatisfy {
                 when (it.productSummaryId) {
-                    1L -> {
+                    1001L -> {
                         assertThat(it.price).isEqualTo(1790000L)
                         assertThat(it.quantity).isEqualTo(1)
                     }
 
-                    2L -> {
+                    1002L -> {
                         assertThat(it.price).isEqualTo(89000L)
                         assertThat(it.quantity).isEqualTo(1)
                     }
 
-                    3L -> {
+                    1003L -> {
                         assertThat(it.price).isEqualTo(12000L)
                         assertThat(it.quantity).isEqualTo(2)
                     }
@@ -200,7 +200,7 @@ class PlaceOrderControllerIntegrationTest {
         @DisplayName("쿠폰을 사용하지않은 상품주문에 성공한다")
         fun placeOrder_WithoutCoupon_Success() {
             // given
-            val memberId = 4L
+            val memberId = 1001L
             val balance = 2000000L
             val chargeAmount = 1903000L
             val requestBody =
@@ -208,17 +208,17 @@ class PlaceOrderControllerIntegrationTest {
                 {
                   "orderItems": [
                     {
-                      "productSummaryId": 1,
+                      "productSummaryId": 1001,
                       "quantity": 1,
                       "price": 1790000
                     },
                     {
-                      "productSummaryId": 2,
+                      "productSummaryId": 1002,
                       "quantity": 1,
                       "price": 89000
                     },
                     {
-                      "productSummaryId": 3,
+                      "productSummaryId": 1003,
                       "quantity": 2,
                       "price": 12000
                     }
@@ -248,13 +248,13 @@ class PlaceOrderControllerIntegrationTest {
                     .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.discountAmount").value(0))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.paymentSummary.chargeAmount").value(1903000))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems.length()").value(3))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].productSummaryId").value(1001L))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].price").value(1790000))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[0].quantity").value(1))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(2L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].productSummaryId").value(1002L))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].price").value(89000))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[1].quantity").value(1))
-                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(3L))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].productSummaryId").value(1003L))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].price").value(12000))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderItems[2].quantity").value(2))
                     .andReturn()
@@ -276,14 +276,14 @@ class PlaceOrderControllerIntegrationTest {
             // 상품 재고 검증
             val products =
                 productSummaryOutput
-                    .findAllInIds(listOf(1L, 2L, 3L))
+                    .findAllInIds(listOf(1001L, 1002L, 1003L))
                     .sortedBy { it.id }
             assertThat(products[0].stockQuantity).isEqualTo(9) // 기존 10개
             assertThat(products[1].stockQuantity).isEqualTo(19) // 기존 20개
             assertThat(products[2].stockQuantity).isEqualTo(98) // 기존 100개
 
             // 쿠폰 사용 검증
-            val coupon = couponOutput.findByCouponSummaryIdAndMemberId(1L, 4L).get()
+            val coupon = couponOutput.findByCouponSummaryIdAndMemberId(1001L, 1001L).get()
             assertThat(coupon.usingAt).isNull()
 
             // 주문정보 검증
@@ -292,17 +292,17 @@ class PlaceOrderControllerIntegrationTest {
             assertThat(orderSummary.orderItems).hasSize(3)
             assertThat(orderSummary.orderItems).allSatisfy {
                 when (it.productSummaryId) {
-                    1L -> {
+                    1001L -> {
                         assertThat(it.price).isEqualTo(1790000L)
                         assertThat(it.quantity).isEqualTo(1)
                     }
 
-                    2L -> {
+                    1002L -> {
                         assertThat(it.price).isEqualTo(89000L)
                         assertThat(it.quantity).isEqualTo(1)
                     }
 
-                    3L -> {
+                    1003L -> {
                         assertThat(it.price).isEqualTo(12000L)
                         assertThat(it.quantity).isEqualTo(2)
                     }
@@ -316,7 +316,7 @@ class PlaceOrderControllerIntegrationTest {
         @DisplayName("보유하지않은 쿠폰을 사용한 상품주문에 실패한다")
         fun placeOrder_InvalidCoupon_Fail() {
             // given
-            val memberId = 4L
+            val memberId = 1001L
             val balance = 2000000L
             val requestBody =
                 """
@@ -324,7 +324,7 @@ class PlaceOrderControllerIntegrationTest {
                   "couponSummaryId": 99,
                   "orderItems": [
                     {
-                      "productSummaryId": 1,
+                      "productSummaryId": 1001,
                       "quantity": 1,
                       "price": 1790000
                     }
@@ -359,14 +359,14 @@ class PlaceOrderControllerIntegrationTest {
         @DisplayName("결제수단이 지원하지않는 경우 주문에 실패한다")
         fun placeOrder_UnsupportedPaymentMethod_Fail() {
             // given
-            val memberId = 4L
+            val memberId = 1001L
             val balance = 2000000L
             val requestBody =
                 """
                 {
                   "orderItems": [
                     {
-                      "productSummaryId": 1,
+                      "productSummaryId": 1001,
                       "quantity": 1,
                       "price": 1790000
                     }
@@ -400,14 +400,14 @@ class PlaceOrderControllerIntegrationTest {
         @DisplayName("잔고가 부족할 경우 주문에 실패한다")
         fun placeOrder_InsufficientBalance_Fail() {
             // given
-            val memberId = 4L
+            val memberId = 1001L
             val balance = 2000000L
             val requestBody =
                 """
                 {
                   "orderItems": [
                     {
-                      "productSummaryId": 1,
+                      "productSummaryId": 1001,
                       "quantity": 2,
                       "price": 1790000
                     }
@@ -442,14 +442,14 @@ class PlaceOrderControllerIntegrationTest {
         @DisplayName("상품의 재고가 부족할 경우 주문에 실패한다")
         fun placeOrder_InsufficientProductQuantity_Fail() {
             // given
-            val memberId = 4L
+            val memberId = 1001L
             val balance = 2000000L
             val requestBody =
                 """
                 {
                   "orderItems": [
                     {
-                      "productSummaryId": 3,
+                      "productSummaryId": 1003,
                       "quantity": 101,
                       "price": 12000
                     }
@@ -487,13 +487,13 @@ class PlaceOrderControllerIntegrationTest {
         @Test
         @DisplayName("동일한 Idempotency-Key로 재요청 시 캐싱된 응답을 반환한다")
         fun placeOrder_ReplayedRequest_ReturnsCachedResponse() {
-            val memberId = 4L
+            val memberId = 1001L
             val requestBody =
                 """
                 {
                   "orderItems": [
                     {
-                      "productSummaryId": 1,
+                      "productSummaryId": 1001,
                       "quantity": 1,
                       "price": 1790000
                     }

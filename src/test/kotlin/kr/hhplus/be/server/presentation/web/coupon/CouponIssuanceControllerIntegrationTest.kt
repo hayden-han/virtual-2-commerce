@@ -60,7 +60,7 @@ class CouponIssuanceControllerIntegrationTest {
         @DisplayName("정상 발급: 기간 내, 수량 미달, 정책 통과")
         fun issueCoupon_success() {
             val memberId = 1L
-            val couponSummaryId = 1L // 정상쿠폰
+            val couponSummaryId = 7001L // 정상쿠폰
             mockMvc
                 .perform(
                     MockMvcRequestBuilders
@@ -78,7 +78,7 @@ class CouponIssuanceControllerIntegrationTest {
         @DisplayName("같은 Idempotency-Key로 중복 요청하면 캐시된 응답을 반환한다")
         fun issueCoupon_idempotent() {
             val memberId = 1L
-            val couponSummaryId = 1L
+            val couponSummaryId = 7001L
             val idempotencyKey = "issue-idempotent"
 
             val firstResponse =
@@ -114,7 +114,7 @@ class CouponIssuanceControllerIntegrationTest {
         @DisplayName("실패: 발급 기간이 아님")
         fun issueCoupon_fail_period() {
             val memberId = 1L
-            val couponSummaryId = 2L // 기간외쿠폰
+            val couponSummaryId = 7002L // 기간외쿠폰
             mockMvc
                 .perform(
                     MockMvcRequestBuilders
@@ -131,7 +131,7 @@ class CouponIssuanceControllerIntegrationTest {
         @DisplayName("실패: 수량 소진")
         fun issueCoupon_fail_maxCount() {
             val memberId = 1L
-            val couponSummaryId = 3L // 수량소진쿠폰
+            val couponSummaryId = 7003L // 수량소진쿠폰
             mockMvc
                 .perform(
                     MockMvcRequestBuilders
@@ -147,8 +147,8 @@ class CouponIssuanceControllerIntegrationTest {
         @Test
         @DisplayName("실패: 정책 위반(중복 발급 등)")
         fun issueCoupon_fail_policy() {
-            val memberId = 2L // 이미 발급된 회원
-            val couponSummaryId = 1L // 정상쿠폰
+            val memberId = 7002L // 이미 발급된 회원
+            val couponSummaryId = 7001L // 정상쿠폰
             mockMvc
                 .perform(
                     MockMvcRequestBuilders

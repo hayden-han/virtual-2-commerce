@@ -36,7 +36,7 @@ class MyCouponControllerIntegrationTest {
         @DisplayName("2개의 쿠폰(미사용 1개, 사용 1개)을 보유한 회원의 쿠폰리스트를 조회한다")
         fun getMyCoupons_success() {
             // given
-            val memberId = 1L
+            val memberId = 8001L
 
             // when & then
             mockMvc
@@ -48,12 +48,12 @@ class MyCouponControllerIntegrationTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.count").value(2))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons").isArray)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons.length()").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[0].id").value(1L))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[0].id").value(8001L))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[0].name").value("SPRING_SALE"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[0].discountPercentage").value(10L))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[0].expiredAt").value("2025-03-21T13:00:00"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[0].usingAt").value("2025-03-20T13:00:00"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[1].id").value(2L))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[1].id").value(8002L))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[1].name").value("WINTER_SALE"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[1].discountPercentage").value(25L))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.coupons[1].expiredAt").value("2026-01-18T13:00:00"))
