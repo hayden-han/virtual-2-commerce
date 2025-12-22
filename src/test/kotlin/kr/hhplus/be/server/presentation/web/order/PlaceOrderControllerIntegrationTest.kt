@@ -13,6 +13,7 @@ import kr.hhplus.be.server.common.annotation.IntegrationTest
 import kr.hhplus.be.server.common.config.NoOpEventPublisherConfig
 import kr.hhplus.be.server.common.support.postJsonWithIdempotency
 import kr.hhplus.be.server.domain.model.payment.PaymentMethod
+import kr.hhplus.be.server.utils.TransactionUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -61,6 +62,9 @@ class PlaceOrderControllerIntegrationTest {
 
     @Autowired
     private lateinit var orderSummaryOutput: OrderSummaryOutput
+
+    @Autowired
+    private lateinit var transactionUtils: TransactionUtils
 
     private val fixedNow = LocalDateTime.of(2025, 6, 18, 12, 59, 59)
 
@@ -147,11 +151,17 @@ class PlaceOrderControllerIntegrationTest {
             val orderId = JsonPath.read<Number>(responseBody, "$.orderId").toLong()
 
             // 잔고 검증
-            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            val memberBalance =
+                transactionUtils.onPrimaryTransaction {
+                    memberBalanceOutput.findByMemberId(memberId).get()
+                }
             assertThat(memberBalance.balance).isEqualTo(balance - chargeAmount)
 
             // 결제정보 검증
-            val payment = paymentOutput.findByOrderSummaryId(orderId).get()
+            val payment =
+                transactionUtils.onPrimaryTransaction {
+                    paymentOutput.findByOrderSummaryId(orderId).get()
+                }
             assertThat(payment.method).isEqualTo(PaymentMethod.POINT)
             assertThat(payment.totalAmount).isEqualTo(1903000L)
             assertThat(payment.discountAmount).isEqualTo(190300L)
@@ -159,19 +169,27 @@ class PlaceOrderControllerIntegrationTest {
 
             // 상품 재고 검증
             val products =
-                productSummaryOutput
-                    .findAllInIds(listOf(1001L, 1002L, 1003L))
-                    .sortedBy { it.id }
+                transactionUtils.onPrimaryTransaction {
+                    productSummaryOutput
+                        .findAllInIds(listOf(1001L, 1002L, 1003L))
+                        .sortedBy { it.id }
+                }
             assertThat(products[0].stockQuantity).isEqualTo(9) // 기존 10개
             assertThat(products[1].stockQuantity).isEqualTo(19) // 기존 20개
             assertThat(products[2].stockQuantity).isEqualTo(98) // 기존 100개
 
             // 쿠폰 사용 검증
-            val coupon = couponOutput.findByCouponSummaryIdAndMemberId(1001L, 1001L).get()
+            val coupon =
+                transactionUtils.onPrimaryTransaction {
+                    couponOutput.findByCouponSummaryIdAndMemberId(1001L, 1001L).get()
+                }
             assertThat(coupon.usingAt).isEqualTo(fixedNow)
 
             // 주문정보 검증
-            val orderSummary = orderSummaryOutput.findByIdWithOrderItems(orderId).get()
+            val orderSummary =
+                transactionUtils.onPrimaryTransaction {
+                    orderSummaryOutput.findByIdWithOrderItems(orderId).get()
+                }
             assertThat(orderSummary.memberId).isEqualTo(memberId)
             assertThat(orderSummary.orderItems).hasSize(3)
             assertThat(orderSummary.orderItems).allSatisfy {
@@ -191,7 +209,9 @@ class PlaceOrderControllerIntegrationTest {
                         assertThat(it.quantity).isEqualTo(2)
                     }
 
-                    else -> throw IllegalArgumentException("존재하지 않는 상품입니다. productSummaryId=${it.productSummaryId}")
+                    else -> {
+                        throw IllegalArgumentException("존재하지 않는 상품입니다. productSummaryId=${it.productSummaryId}")
+                    }
                 }
             }
         }
@@ -263,11 +283,17 @@ class PlaceOrderControllerIntegrationTest {
             val orderId = JsonPath.read<Number>(responseBody, "$.orderId").toLong()
 
             // 잔고 검증
-            val memberBalance = memberBalanceOutput.findByMemberId(memberId).get()
+            val memberBalance =
+                transactionUtils.onPrimaryTransaction {
+                    memberBalanceOutput.findByMemberId(memberId).get()
+                }
             assertThat(memberBalance.balance).isEqualTo(balance - chargeAmount)
 
             // 결제정보 검증
-            val payment = paymentOutput.findByOrderSummaryId(orderId).get()
+            val payment =
+                transactionUtils.onPrimaryTransaction {
+                    paymentOutput.findByOrderSummaryId(orderId).get()
+                }
             assertThat(payment.method).isEqualTo(PaymentMethod.POINT)
             assertThat(payment.totalAmount).isEqualTo(1903000L)
             assertThat(payment.discountAmount).isEqualTo(0L)
@@ -275,19 +301,27 @@ class PlaceOrderControllerIntegrationTest {
 
             // 상품 재고 검증
             val products =
-                productSummaryOutput
-                    .findAllInIds(listOf(1001L, 1002L, 1003L))
-                    .sortedBy { it.id }
+                transactionUtils.onPrimaryTransaction {
+                    productSummaryOutput
+                        .findAllInIds(listOf(1001L, 1002L, 1003L))
+                        .sortedBy { it.id }
+                }
             assertThat(products[0].stockQuantity).isEqualTo(9) // 기존 10개
             assertThat(products[1].stockQuantity).isEqualTo(19) // 기존 20개
             assertThat(products[2].stockQuantity).isEqualTo(98) // 기존 100개
 
             // 쿠폰 사용 검증
-            val coupon = couponOutput.findByCouponSummaryIdAndMemberId(1001L, 1001L).get()
+            val coupon =
+                transactionUtils.onPrimaryTransaction {
+                    couponOutput.findByCouponSummaryIdAndMemberId(1001L, 1001L).get()
+                }
             assertThat(coupon.usingAt).isNull()
 
             // 주문정보 검증
-            val orderSummary = orderSummaryOutput.findByIdWithOrderItems(orderId).get()
+            val orderSummary =
+                transactionUtils.onPrimaryTransaction {
+                    orderSummaryOutput.findByIdWithOrderItems(orderId).get()
+                }
             assertThat(orderSummary.memberId).isEqualTo(memberId)
             assertThat(orderSummary.orderItems).hasSize(3)
             assertThat(orderSummary.orderItems).allSatisfy {
@@ -307,7 +341,9 @@ class PlaceOrderControllerIntegrationTest {
                         assertThat(it.quantity).isEqualTo(2)
                     }
 
-                    else -> throw IllegalArgumentException("존재하지 않는 상품입니다. productSummaryId=${it.productSummaryId}")
+                    else -> {
+                        throw IllegalArgumentException("존재하지 않는 상품입니다. productSummaryId=${it.productSummaryId}")
+                    }
                 }
             }
         }

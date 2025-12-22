@@ -69,6 +69,11 @@ class ProductSummaryPersistenceAdapter(
         }
     }
 
+    override fun reduceStock(
+        productSummaryId: Long,
+        quantity: Int,
+    ): Boolean = productSummaryRepository.reduceStock(productSummaryId, quantity) > 0
+
     /**
      * 최근 n일간 가장 많이 팔린 상위 m개 상품 정보를 제공한다
      */
