@@ -5,6 +5,4 @@ import java.util.Optional
 
 interface MemberOutput {
     fun findById(memberId: Long): Optional<Member>
-
-    fun findByIdWithLock(memberId: Long): Optional<Member>
 }

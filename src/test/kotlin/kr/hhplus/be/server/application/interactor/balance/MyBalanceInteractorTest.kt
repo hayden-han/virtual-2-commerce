@@ -6,13 +6,14 @@ import kr.hhplus.be.server.application.port.out.MyBalanceOutput
 import kr.hhplus.be.server.common.annotation.UnitTest
 import kr.hhplus.be.server.domain.exception.NotFoundResourceException
 import kr.hhplus.be.server.domain.model.balance.MemberBalance
+import kr.hhplus.be.server.domain.model.balance.RequestAmount
 import kr.hhplus.be.server.domain.utils.StubFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.*
+import java.util.Optional
 
 @UnitTest
 class MyBalanceInteractorTest {
@@ -29,9 +30,10 @@ class MyBalanceInteractorTest {
             val memberId = 1L
             every { myBalanceOutput.findByMemberId(1L) } returns Optional.empty()
 
-            val exception = assertThrows<NotFoundResourceException> {
-                myBalanceInteractor.getMyBalance(memberId)
-            }
+            val exception =
+                assertThrows<NotFoundResourceException> {
+                    myBalanceInteractor.getMyBalance(memberId)
+                }
             assertThat(exception.message).isEqualTo("잔고정보를 찾을 수 없습니다.")
         }
 
@@ -40,11 +42,12 @@ class MyBalanceInteractorTest {
         fun getMyBalance_ExistMember() {
             // given
             val member = StubFactory.member(id = 2L)
-            val memberBalance = MemberBalance(
-                id = 1L,
-                member = member,
-                balance = 1000L,
-            )
+            val memberBalance =
+                MemberBalance(
+                    id = 1L,
+                    member = member,
+                    balance = 1000L,
+                )
             every { myBalanceOutput.findByMemberId(2L) } returns Optional.of(memberBalance)
 
             // when
@@ -69,14 +72,13 @@ class MyBalanceInteractorTest {
             val memberId = 1L
             val memberBalanceId = 1L
             val amount = 1000L
-            every {
-                myBalanceOutput.findByIdAndMemberId(memberBalanceId, memberId)
-            } returns Optional.empty()
+            every { myBalanceOutput.atomicRecharge(memberBalanceId, RequestAmount(1000L)) } returns false
 
             // when & then
-            val exception = assertThrows<NotFoundResourceException> {
-                myBalanceInteractor.rechargeMyBalance(memberId, memberBalanceId, amount)
-            }
+            val exception =
+                assertThrows<NotFoundResourceException> {
+                    myBalanceInteractor.rechargeMyBalance(memberId, memberBalanceId, amount)
+                }
             assertThat(exception.message).isEqualTo("잔고정보를 찾을 수 없습니다.")
         }
 
@@ -85,21 +87,16 @@ class MyBalanceInteractorTest {
         fun rechargeMyBalance_ExistMember() {
             // given
             val member = StubFactory.member(id = 2L)
-            val memberBalance = MemberBalance(
-                id = 1L,
-                member = member,
-                balance = 1000L,
-            )
-            val rechargedBalance = MemberBalance(
-                id = 1L,
-                member = member,
-                balance = 2000L,
-            )
+            val rechargedBalance =
+                MemberBalance(
+                    id = 1L,
+                    member = member,
+                    balance = 2000L,
+                )
+            every { myBalanceOutput.atomicRecharge(1L, RequestAmount(1000L)) } returns true
             every {
                 myBalanceOutput.findByIdAndMemberId(1L, 2L)
-            } returns Optional.of(memberBalance)
-
-            every { myBalanceOutput.save(rechargedBalance) } returns rechargedBalance
+            } returns Optional.of(rechargedBalance)
 
             // when
             val actualBalance = myBalanceInteractor.rechargeMyBalance(2L, 1L, 1000L)
