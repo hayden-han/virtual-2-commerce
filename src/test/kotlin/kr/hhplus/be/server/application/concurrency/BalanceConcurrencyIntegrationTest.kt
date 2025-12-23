@@ -93,8 +93,8 @@ class BalanceConcurrencyIntegrationTest {
                 val startSignal = CompletableDeferred<Unit>()
 
                 val requests = listOf(
-                    RechargeRequest(memberId, memberBalanceId, rechargeAmount1),
-                    RechargeRequest(memberId, memberBalanceId, rechargeAmount2),
+                    RechargeRequest(memberId, memberBalanceId, rechargeAmount1, "recharge-key-1"),
+                    RechargeRequest(memberId, memberBalanceId, rechargeAmount2, "recharge-key-2"),
                 )
 
                 val jobs = requests.map { request ->
@@ -105,6 +105,7 @@ class BalanceConcurrencyIntegrationTest {
                                 MockMvcRequestBuilders
                                     .put("/api/v1/balances/me/${request.memberBalanceId}/recharge")
                                     .header("X-Member-Id", request.memberId)
+                                    .header("Idempotency-Key", request.idempotencyKey)
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .content("""{"chargeAmount": ${request.amount}}"""),
                             )
@@ -267,6 +268,7 @@ class BalanceConcurrencyIntegrationTest {
         val memberId: Long,
         val memberBalanceId: Long,
         val amount: Long,
+        val idempotencyKey: String,
     )
 
     private data class OrderRequest(
