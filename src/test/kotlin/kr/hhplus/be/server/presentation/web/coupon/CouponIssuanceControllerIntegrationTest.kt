@@ -124,7 +124,7 @@ class CouponIssuanceControllerIntegrationTest {
                         .content("{\"couponSummaryId\": $couponSummaryId}")
                         .contentType("application/json"),
                 ).andExpect(MockMvcResultMatchers.status().isConflict)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("쿠폰발급이 가능한 기간이 아닙니다."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("쿠폰 발급에 실패했습니다. 수량이 소진되었거나 발급 기간이 아닙니다."))
         }
 
         @Test
@@ -141,7 +141,7 @@ class CouponIssuanceControllerIntegrationTest {
                         .content("{\"couponSummaryId\": $couponSummaryId}")
                         .contentType("application/json"),
                 ).andExpect(MockMvcResultMatchers.status().isConflict)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("쿠폰발급수량이 부족합니다."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("쿠폰 발급에 실패했습니다. 수량이 소진되었거나 발급 기간이 아닙니다."))
         }
 
         @Test
