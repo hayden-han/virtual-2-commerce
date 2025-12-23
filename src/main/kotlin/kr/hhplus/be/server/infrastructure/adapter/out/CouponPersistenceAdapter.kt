@@ -56,6 +56,7 @@ class CouponPersistenceAdapter(
             )
         } catch (e: DataIntegrityViolationException) {
             throw ConflictResourceException(
+                cause = e,
                 message = "이미 발급된 쿠폰입니다.",
                 clue =
                     mapOf(
