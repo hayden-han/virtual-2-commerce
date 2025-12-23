@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.presentation.web.exception
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kr.hhplus.be.server.application.port.out.LockAcquisitionException
 import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import kr.hhplus.be.server.domain.exception.ForbiddenException
 import kr.hhplus.be.server.domain.exception.NotFoundResourceException
@@ -59,6 +60,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
             ErrorResponse(e.message),
             HttpStatus.FORBIDDEN,
         )
+
+    @ExceptionHandler(LockAcquisitionException::class)
+    fun handleLockAcquisitionException(e: LockAcquisitionException): ResponseEntity<ErrorResponse> {
+        logger.warn { "분산 락 획득 실패: ${e.message}" }
+
+        return ResponseEntity
+            .status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", e.retryAfterSeconds.toString())
+            .body(ErrorResponse(e.message ?: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."))
+    }
 }
 
 data class ErrorResponse(

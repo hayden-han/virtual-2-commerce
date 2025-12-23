@@ -28,12 +28,12 @@ class PlaceOrderFacade(
 ) : PlaceOrderUseCase {
     /**
      * 유저의 상품주문
+     * - 상품의 재고 차감 (가장 먼저 - 경쟁이 심한 리소스)
      * - 유저정보 조회
      * - 주문상태 생성
      * - 쿠폰 사용
      * - 결제정보 생성
      * - 유저의 잔고 포인트 차감
-     * - 상품의 재고 차감
      */
     @Transactional
     override fun placeOrder(
@@ -43,6 +43,10 @@ class PlaceOrderFacade(
         requestPaymentSummary: PlaceOrderPaymentSummaryVO,
         orderAt: LocalDateTime,
     ): PlaceOrderResultVO {
+        // 1. 재고 차감 (가장 먼저 - 경쟁이 심한 리소스를 먼저 확보)
+        productQuantityUseCase.reduceBy(orderItems)
+
+        // 2. 회원 조회
         val member =
             memberOutput
                 .findById(memberId)
@@ -53,12 +57,14 @@ class PlaceOrderFacade(
                     )
                 }
 
+        // 3. 주문 생성
         val orderSummary =
             generateOrderUseCase.generateOrder(
                 member = member,
                 orderItems = orderItems,
             )
 
+        // 4. 쿠폰 사용
         val coupon =
             couponSummaryId?.let {
                 myCouponUseCase.using(
@@ -68,6 +74,7 @@ class PlaceOrderFacade(
                 )
             }
 
+        // 5. 결제 정보 생성
         val paymentSummary =
             generatePaymentUseCase.generatePaymentSummary(
                 coupon = coupon,
@@ -75,11 +82,11 @@ class PlaceOrderFacade(
                 method = requestPaymentSummary.method,
             )
 
+        // 6. 잔고 차감
         myBalanceUseCase.reduceMyBalance(
             memberId = memberId,
             amount = paymentSummary.chargeAmount,
         )
-        productQuantityUseCase.reduceBy(orderSummary.orderItems)
 
         val placeOrderResult = PlaceOrderResultVO.of(orderSummary, paymentSummary)
         eventPublisher.publishEvent(placeOrderResult)

@@ -48,6 +48,7 @@ dependencies {
 
     // Spring
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-aop")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
@@ -57,6 +58,10 @@ dependencies {
 
     // DB
     runtimeOnly("com.mysql:mysql-connector-j")
+
+    // Redis (Distributed Lock)
+    implementation("org.redisson:redisson:3.40.2")
+
     // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
 

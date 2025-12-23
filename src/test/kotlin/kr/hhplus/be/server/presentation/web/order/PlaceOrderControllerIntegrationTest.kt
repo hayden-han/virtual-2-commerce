@@ -167,7 +167,7 @@ class PlaceOrderControllerIntegrationTest {
             assertThat(payment.discountAmount).isEqualTo(190300L)
             assertThat(payment.chargeAmount).isEqualTo(1712700L)
 
-            // 상품 재고 검증
+            // 상품 재고 검증 (캐시 우회)
             val products =
                 transactionUtils.onPrimaryTransaction {
                     productSummaryOutput
@@ -299,7 +299,7 @@ class PlaceOrderControllerIntegrationTest {
             assertThat(payment.discountAmount).isEqualTo(0L)
             assertThat(payment.chargeAmount).isEqualTo(1903000L)
 
-            // 상품 재고 검증
+            // 상품 재고 검증 (캐시 우회)
             val products =
                 transactionUtils.onPrimaryTransaction {
                     productSummaryOutput

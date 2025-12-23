@@ -5,10 +5,9 @@ import kr.hhplus.be.server.application.enums.ListingProductSortBy
 import kr.hhplus.be.server.application.port.out.ListingProductOutput
 import kr.hhplus.be.server.application.port.out.ProductSummaryOutput
 import kr.hhplus.be.server.domain.model.product.ProductSummary
-import kr.hhplus.be.server.infrastructure.config.RedisCacheConfig
+import kr.hhplus.be.server.infrastructure.lock.DistributedLock
 import kr.hhplus.be.server.infrastructure.persistence.product.ProductSummaryJpaRepository
 import kr.hhplus.be.server.infrastructure.persistence.product.mapper.ProductSummaryJpaEntityMapper
-import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Component
@@ -21,10 +20,6 @@ class ProductSummaryPersistenceAdapter(
     private val productSummaryRepository: ProductSummaryJpaRepository,
 ) : ProductSummaryOutput,
     ListingProductOutput {
-    @Cacheable(
-        value = [RedisCacheConfig.CACHE_PRODUCT_DETAIL],
-        key = "#productSummaryIds.stream().sorted().collect(T(java.util.stream.Collectors).toList()).toString()",
-    )
     override fun findAllInIds(productSummaryIds: Collection<Long>): List<ProductSummary> =
         productSummaryRepository
             .findAllByIdIn(productSummaryIds)
@@ -75,6 +70,10 @@ class ProductSummaryPersistenceAdapter(
         }
     }
 
+    @DistributedLock(
+        key = "#productSummaryId",
+        keyPrefix = "lock:product:stock:",
+    )
     override fun reduceStock(
         productSummaryId: Long,
         quantity: Int,
