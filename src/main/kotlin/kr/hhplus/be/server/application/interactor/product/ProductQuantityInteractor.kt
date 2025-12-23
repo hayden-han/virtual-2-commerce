@@ -1,22 +1,26 @@
 package kr.hhplus.be.server.application.interactor.product
 
+import kr.hhplus.be.server.application.event.ProductCacheEvictEvent
 import kr.hhplus.be.server.application.port.out.ProductSummaryOutput
 import kr.hhplus.be.server.application.usecase.product.ProductQuantityUseCase
 import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import kr.hhplus.be.server.domain.model.order.OrderItem
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ProductQuantityInteractor(
     private val productSummaryOutput: ProductSummaryOutput,
+    private val eventPublisher: ApplicationEventPublisher,
 ) : ProductQuantityUseCase {
     /**
      * 주문된 상품들의 재고 감소.
      * 빠르고 안전한 처리를 위해 조건부 UPDATE를 사용하여 동시성 이슈 방지한다.
+     * 캐시 무효화는 트랜잭션 커밋 후 이벤트 리스너에서 처리한다.
      */
     @Transactional
-    override fun reduceBy(orderItems: List<OrderItem>) =
+    override fun reduceBy(orderItems: List<OrderItem>) {
         orderItems.forEach { orderItem ->
             if (!productSummaryOutput.reduceStock(orderItem.productSummaryId, orderItem.quantity)) {
                 val product =
@@ -36,4 +40,7 @@ class ProductQuantityInteractor(
                 )
             }
         }
+
+        eventPublisher.publishEvent(ProductCacheEvictEvent(reason = "재고 차감"))
+    }
 }
