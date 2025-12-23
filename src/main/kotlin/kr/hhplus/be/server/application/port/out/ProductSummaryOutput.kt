@@ -8,7 +8,7 @@ interface ProductSummaryOutput {
     fun saveAll(updatedProductSummaryList: Collection<ProductSummary>): List<ProductSummary>
 
     /**
-     * 재고를 원자적으로 차감합니다
+     * 재고를 원자적으로 차감합니다 (조건부 UPDATE)
      */
     fun reduceStock(
         productSummaryId: Long,

@@ -22,7 +22,6 @@ import java.time.Duration
 class RedisCacheConfig {
     companion object {
         const val CACHE_PRODUCTS = "products"
-        const val CACHE_PRODUCT_DETAIL = "productDetail"
         const val CACHE_TOP_SELLING_PRODUCTS = "topSellingProducts"
     }
 
@@ -57,7 +56,6 @@ class RedisCacheConfig {
         val cacheConfigMap =
             mapOf(
                 CACHE_PRODUCTS to defaultCacheConfig.entryTtl(Duration.ofMinutes(30)), // 상품 목록: 30분
-                CACHE_PRODUCT_DETAIL to defaultCacheConfig.entryTtl(Duration.ofMinutes(30)), // 상품 상세: 30분
                 CACHE_TOP_SELLING_PRODUCTS to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)), // 인기 상품: 15분
             )
 

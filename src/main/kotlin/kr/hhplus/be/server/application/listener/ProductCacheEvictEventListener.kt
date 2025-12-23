@@ -21,10 +21,8 @@ class ProductCacheEvictEventListener(
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleProductCacheEvict(event: ProductCacheEvictEvent) {
         logger.debug { "상품 캐시 무효화: ${event.reason}" }
-
         listOf(
             RedisCacheConfig.CACHE_PRODUCTS,
-            RedisCacheConfig.CACHE_PRODUCT_DETAIL,
             RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS,
         ).forEach { cacheName ->
             cacheManager.getCache(cacheName)?.clear()

@@ -79,7 +79,6 @@ class ProductCachingIntegrationTest {
     private fun flushRedisCache() {
         val cacheNames = listOf(
             RedisCacheConfig.CACHE_PRODUCTS,
-            RedisCacheConfig.CACHE_PRODUCT_DETAIL,
             RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS,
         )
 
@@ -172,48 +171,6 @@ class ProductCachingIntegrationTest {
     }
 
     @Nested
-    @DisplayName("상품 상세 캐싱")
-    inner class ProductDetailCaching {
-        @Test
-        @DisplayName("동일 ID 목록으로 조회 시 캐시된 결과를 반환한다")
-        fun findAllInIds_cachesResult() {
-            // given
-            val productIds = listOf(1L, 2L, 3L)
-
-            // when - 첫 번째 호출 (캐시 미스)
-            val firstResult = productSummaryOutput.findAllInIds(productIds)
-
-            // when - 두 번째 호출 (캐시 히트)
-            val secondResult = productSummaryOutput.findAllInIds(productIds)
-
-            // then - 동일한 결과 반환
-            assertThat(firstResult).hasSize(3)
-            assertThat(secondResult).hasSize(3)
-            assertThat(firstResult.map { it.id }).containsExactlyInAnyOrderElementsOf(secondResult.map { it.id })
-
-            // then - 캐시에 데이터가 존재하는지 확인
-            val cache = cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCT_DETAIL)
-            assertThat(cache).isNotNull
-        }
-
-        @Test
-        @DisplayName("ID 순서가 달라도 동일 캐시를 사용한다")
-        fun findAllInIds_orderIndependentCaching() {
-            // given
-            val productIds1 = listOf(3L, 1L, 2L)
-            val productIds2 = listOf(1L, 2L, 3L)
-
-            // when
-            val firstResult = productSummaryOutput.findAllInIds(productIds1)
-            val secondResult = productSummaryOutput.findAllInIds(productIds2)
-
-            // then - 동일한 결과 반환 (정렬 후 캐시 키 생성)
-            assertThat(firstResult.mapNotNull { it.id }.sorted())
-                .isEqualTo(secondResult.mapNotNull { it.id }.sorted())
-        }
-    }
-
-    @Nested
     @DisplayName("캐시 무효화")
     inner class CacheEviction {
         @Test
@@ -222,14 +179,12 @@ class ProductCachingIntegrationTest {
             // given - 캐시를 먼저 채움
             listingProductUseCase.listingBy(0, 10, "REGISTER", "DESC")
             listingProductUseCase.topSellingProducts(3, 5, LocalDate.of(2025, 9, 19))
-            productSummaryOutput.findAllInIds(listOf(1L, 2L))
 
             // then - 캐시에 데이터가 존재
             assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCTS)?.get("0_10_REGISTER_DESC")).isNotNull
             assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS)).isNotNull
-            assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCT_DETAIL)).isNotNull
 
-            // when - 트랜잭션 내에서 이벤트 발행 (AFTER_COMMIT이므로 트랜잭션 완료 후 캐시 무효화)
+            // when - 트랜잭션 내에서 이벤트 발행
             transactionTemplate.execute {
                 eventPublisher.publishEvent(ProductCacheEvictEvent(reason = "테스트 캐시 무효화"))
             }
@@ -237,26 +192,6 @@ class ProductCachingIntegrationTest {
             // then - 모든 상품 관련 캐시가 무효화됨
             assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCTS)?.get("0_10_REGISTER_DESC")).isNull()
             assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS)?.get("3_5_2025-09-19")).isNull()
-            assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCT_DETAIL)?.get("[1, 2]")).isNull()
-        }
-
-        @Test
-        @DisplayName("재고 차감 시 트랜잭션 커밋 후 캐시가 무효화된다")
-        fun reduceStock_evictsCacheAfterCommit() {
-            // given - 캐시를 먼저 채움
-            listingProductUseCase.listingBy(0, 10, "REGISTER", "DESC")
-            productSummaryOutput.findAllInIds(listOf(1L))
-
-            assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCTS)?.get("0_10_REGISTER_DESC")).isNotNull
-
-            // when - 재고 차감 (트랜잭션 내에서 실행됨)
-            transactionTemplate.execute {
-                productSummaryOutput.reduceStock(1L, 1)
-                eventPublisher.publishEvent(ProductCacheEvictEvent(reason = "재고 차감"))
-            }
-
-            // then - 캐시가 무효화됨
-            assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCTS)?.get("0_10_REGISTER_DESC")).isNull()
         }
 
         @Test

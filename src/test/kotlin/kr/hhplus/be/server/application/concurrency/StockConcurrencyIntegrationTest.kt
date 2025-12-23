@@ -249,6 +249,10 @@ class StockConcurrencyIntegrationTest {
                 // 총 판매 수량 계산
                 val totalSoldQuantity = successCount * orderQuantity
 
+                // 실패 응답 분류 (재고 부족 409 또는 락 획득 실패 429)
+                val stockFailureCount = responses.count { it.status == 409 }
+                val lockFailureCount = responses.count { it.status == 429 }
+
                 assertAll(
                     {
                         assertThat(successCount)
@@ -259,6 +263,11 @@ class StockConcurrencyIntegrationTest {
                         assertThat(failureCount)
                             .describedAs("최소 3명은 실패해야 함")
                             .isGreaterThanOrEqualTo(3)
+                    },
+                    {
+                        assertThat(stockFailureCount + lockFailureCount)
+                            .describedAs("실패는 재고 부족(409) 또는 락 획득 실패(429)여야 함")
+                            .isEqualTo(failureCount)
                     },
                     {
                         assertThat(finalStock)
