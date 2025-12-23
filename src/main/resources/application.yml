@@ -27,3 +27,4 @@ app:
     paths:
       - /api/v1/orders
       - /api/v1/coupons/issuance
+      - /api/v1/balances/me/*/recharge

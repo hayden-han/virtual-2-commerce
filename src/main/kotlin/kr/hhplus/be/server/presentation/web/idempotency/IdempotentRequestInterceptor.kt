@@ -17,7 +17,7 @@ import kotlin.text.Charsets
 
 /**
  * 멱등성 요청을 처리하기 위한 인터셉터
- * - POST 요청에 대해서만 동작
+ * - POST/PUT 요청에 대해 동작
  * - 요청 헤더에서 Idempotency-Key를 추출하여 캐시 키 생성
  * - 이미 처리 중이거나 완료된 요청이 있는지 확인
  *   - 처리 중인 요청이 있으면 409 Conflict 응답 반환
@@ -37,7 +37,7 @@ class IdempotentRequestInterceptor(
         response: HttpServletResponse,
         handler: Any,
     ): Boolean {
-        if (!request.isPostMethod()) {
+        if (!request.isIdempotentMethod()) {
             return true
         }
 
@@ -90,7 +90,13 @@ class IdempotentRequestInterceptor(
         }
     }
 
-    private fun HttpServletRequest.isPostMethod(): Boolean = this.method.equals("POST", ignoreCase = true)
+    /**
+     * 멱등성 처리가 필요한 HTTP 메서드인지 확인한다.
+     * POST와 PUT 요청에 대해 멱등성 처리를 적용한다.
+     */
+    private fun HttpServletRequest.isIdempotentMethod(): Boolean =
+        this.method.equals("POST", ignoreCase = true) ||
+            this.method.equals("PUT", ignoreCase = true)
 
     private fun HttpServletResponse.isOK(): Boolean = this.status == HttpStatus.OK.value()
 
