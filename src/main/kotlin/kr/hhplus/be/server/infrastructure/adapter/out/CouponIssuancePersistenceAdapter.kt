@@ -5,23 +5,23 @@ import kr.hhplus.be.server.domain.model.coupon.CouponIssuance
 import kr.hhplus.be.server.infrastructure.persistence.coupon.CouponIssuanceJpaRepository
 import kr.hhplus.be.server.infrastructure.persistence.coupon.mapper.CouponIssuanceJpaEntityMapper
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import java.util.Optional
 
 @Component
 class CouponIssuancePersistenceAdapter(
     private val couponIssuanceJpaRepository: CouponIssuanceJpaRepository,
 ) : CouponIssuanceOutput {
-    override fun findByCouponSummaryIdWithLock(couponSummaryId: Long): Optional<CouponIssuance> =
+    @Transactional(readOnly = true)
+    override fun findByCouponSummaryId(couponSummaryId: Long): Optional<CouponIssuance> =
         couponIssuanceJpaRepository
-            .findByCouponSummaryIdWithLock(couponSummaryId)
+            .findByCouponSummaryId(couponSummaryId)
             .map(CouponIssuanceJpaEntityMapper::toDomain)
 
-    override fun save(domain: CouponIssuance): CouponIssuance {
-        val savedEntity =
-            CouponIssuanceJpaEntityMapper
-                .toEntity(domain)
-                .let(couponIssuanceJpaRepository::save)
-
-        return CouponIssuanceJpaEntityMapper.toDomain(savedEntity)
-    }
+    @Transactional
+    override fun atomicIssue(
+        couponSummaryId: Long,
+        now: LocalDateTime,
+    ): Boolean = couponIssuanceJpaRepository.atomicIssue(couponSummaryId, now) > 0
 }

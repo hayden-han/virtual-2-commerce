@@ -142,7 +142,7 @@ class PlaceOrderConcurrencyIntegrationTest {
                         { assertThat(failure[0].status).isEqualTo(409) },
                         {
                             val message = JsonPath.read<String>(failure[0].contentAsString, "$.message")
-                            assertThat(message).contains("이미 사용된 쿠폰입니다.")
+                            assertThat(message).contains("이미 사용되었거나 만료된 쿠폰입니다.")
                         },
                     )
                 }

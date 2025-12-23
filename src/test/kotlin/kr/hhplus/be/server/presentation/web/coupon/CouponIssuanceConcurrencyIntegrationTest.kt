@@ -106,7 +106,7 @@ class CouponIssuanceConcurrencyIntegrationTest {
                         { assertThat(failure[0].status).isEqualTo(409) },
                         {
                             val message = JsonPath.read<String>(failure[0].contentAsString, "$.message")
-                            assertThat(message).contains("쿠폰발급수량이 부족합니다.")
+                            assertThat(message).contains("쿠폰 발급에 실패했습니다.")
                         },
                     )
                 }

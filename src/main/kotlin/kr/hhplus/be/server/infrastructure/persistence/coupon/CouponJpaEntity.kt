@@ -9,11 +9,20 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import kr.hhplus.be.server.infrastructure.persistence.config.CreatedAndUpdatedAtAuditEntity
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "coupon")
+@Table(
+    name = "coupon",
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uk_coupon_member_summary",
+            columnNames = ["member_id", "coupon_summary_id"],
+        ),
+    ],
+)
 class CouponJpaEntity(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_summary_id", nullable = false)

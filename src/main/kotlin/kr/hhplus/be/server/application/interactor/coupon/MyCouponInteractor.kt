@@ -3,6 +3,7 @@ package kr.hhplus.be.server.application.interactor.coupon
 import kr.hhplus.be.server.application.port.out.CouponOutput
 import kr.hhplus.be.server.application.usecase.coupon.MyCouponUseCase
 import kr.hhplus.be.server.application.vo.CouponItemVO
+import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import kr.hhplus.be.server.domain.exception.NotFoundResourceException
 import kr.hhplus.be.server.domain.model.coupon.Coupon
 import kr.hhplus.be.server.domain.model.member.Member
@@ -32,18 +33,24 @@ class MyCouponInteractor(
         couponSummaryId: Long,
         now: LocalDateTime,
     ): Coupon {
-        val usedCoupon =
+        val memberId = member.id!!
+        val coupon =
             couponOutput
-                .findByCouponSummaryIdAndMemberId(
-                    couponSummaryId = couponSummaryId,
-                    memberId = member.id!!,
-                ).orElseThrow {
-                    NotFoundResourceException(
+                .findByCouponSummaryIdAndMemberId(couponSummaryId, memberId)
+                .orElseThrow {
+                    throw NotFoundResourceException(
                         message = "보유하지 않은 쿠폰입니다.",
-                        clue = mapOf("memberId" to "${member.id}", "couponSummaryId" to "$couponSummaryId"),
+                        clue = mapOf("memberId" to "$memberId", "couponSummaryId" to "$couponSummaryId"),
                     )
-                }.using(now)
+                }
 
-        return couponOutput.save(usedCoupon)
+        if (!couponOutput.atomicUse(couponSummaryId, memberId, now)) {
+            throw ConflictResourceException(
+                message = "이미 사용되었거나 만료된 쿠폰입니다.",
+                clue = mapOf("memberId" to "$memberId", "couponSummaryId" to "$couponSummaryId"),
+            )
+        }
+
+        return couponOutput.refresh(coupon)
     }
 }

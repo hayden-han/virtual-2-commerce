@@ -6,6 +6,7 @@ import kr.hhplus.be.server.application.port.out.CouponOutput
 import kr.hhplus.be.server.application.port.out.CouponSummaryOutput
 import kr.hhplus.be.server.application.usecase.coupon.CouponIssuancePolicyUseCaseFactory
 import kr.hhplus.be.server.application.usecase.coupon.CouponIssuanceUseCase
+import kr.hhplus.be.server.domain.exception.ConflictResourceException
 import kr.hhplus.be.server.domain.exception.NotFoundResourceException
 import kr.hhplus.be.server.domain.model.coupon.Coupon
 import org.springframework.stereotype.Service
@@ -22,14 +23,12 @@ class CouponIssuanceFacade(
 ) : CouponIssuanceUseCase {
     /**
      * 쿠폰을 발급한다
-     * TODO: 동시성 이슈를 보완하기위해 이후 분산락을 적용시켜야한다.
      *
      * - 쿠폰정보를 조회하여 존재하는지 확인한다.
-     * - 쿠폰발급정보를 통해 유효성을 검증한다.
+     * - 쿠폰발급정보를 조회한다.
      * - 쿠폰발급정책들을 조회하여 순환하며 발급가능여부를 확인한다.
-     * - 쿠폰발급정보를 갱신한다.
-     * - 쿠폰을 생성한다.
-     * - 생성된 쿠폰을 저장한다.
+     * - 조건부 UPDATE로 쿠폰발급수량을 원자적으로 증가시킨다.
+     * - 쿠폰을 생성하여 저장한다. (Unique 제약으로 중복 발급 방지)
      * - 저장된 쿠폰을 반환한다.
      */
     @Transactional
@@ -38,18 +37,19 @@ class CouponIssuanceFacade(
         couponSummaryId: Long,
         now: LocalDateTime,
     ): Coupon {
-        val summary = summaryOutput
-            .findById(couponSummaryId)
-            .orElseThrow {
-                NotFoundResourceException(
-                    message = "요청하신 쿠폰의 정보를 찾을수없습니다.",
-                    clue = mapOf("couponSummaryId" to couponSummaryId),
-                )
-            }
+        val summary =
+            summaryOutput
+                .findById(couponSummaryId)
+                .orElseThrow {
+                    NotFoundResourceException(
+                        message = "요청하신 쿠폰의 정보를 찾을수없습니다.",
+                        clue = mapOf("couponSummaryId" to couponSummaryId),
+                    )
+                }
 
         val issuance =
             issuanceOutput
-                .findByCouponSummaryIdWithLock(couponSummaryId)
+                .findByCouponSummaryId(couponSummaryId)
                 .orElseThrow {
                     NotFoundResourceException(
                         message = "요청하신 쿠폰의 발급정보를 찾을수없습니다.",
@@ -62,13 +62,22 @@ class CouponIssuanceFacade(
             .mapNotNull(issuancePolicyUseCaseFactory::from)
             .forEach { it.canIssue(memberId, summary) }
 
-        val updatedIssuance = issuance.issue(now)
-        issuanceOutput.save(updatedIssuance)
+        if (!issuanceOutput.atomicIssue(couponSummaryId, now)) {
+            throw ConflictResourceException(
+                message = "쿠폰 발급에 실패했습니다. 수량이 소진되었거나 발급 기간이 아닙니다.",
+                clue =
+                    mapOf(
+                        "couponSummaryId" to couponSummaryId,
+                        "now" to now,
+                    ),
+            )
+        }
 
-        return Coupon.create(
-            memberId = memberId,
-            couponSummary = summary,
-            now = now,
-        ).let(couponOutput::save)
+        return Coupon
+            .create(
+                memberId = memberId,
+                couponSummary = summary,
+                now = now,
+            ).let(couponOutput::save)
     }
 }
