@@ -4,7 +4,6 @@ import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kr.hhplus.be.server.application.event.ProductCacheEvictEvent
-import kr.hhplus.be.server.application.port.out.ProductSummaryOutput
 import kr.hhplus.be.server.application.usecase.product.ListingProductUseCase
 import kr.hhplus.be.server.common.annotation.IntegrationTest
 import kr.hhplus.be.server.common.config.TestDataSourceConfig
@@ -27,7 +26,6 @@ import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
 import java.time.Instant
-import java.time.LocalDate
 
 @IntegrationTest
 @SpringBootTest
@@ -40,11 +38,12 @@ import java.time.LocalDate
     Sql(scripts = ["/sql/listing-product-cleanup.sql"], executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD),
 )
 class ProductCachingIntegrationTest {
-    @Autowired
-    private lateinit var listingProductUseCase: ListingProductUseCase
+    companion object {
+        private const val RANKING_KEY = "product:sales:ranking"
+    }
 
     @Autowired
-    private lateinit var productSummaryOutput: ProductSummaryOutput
+    private lateinit var listingProductUseCase: ListingProductUseCase
 
     @Autowired
     private lateinit var cacheManager: CacheManager
@@ -90,6 +89,9 @@ class ProductCachingIntegrationTest {
             }
             cacheManager.getCache(cacheName)?.clear()
         }
+
+        // 랭킹 데이터도 초기화
+        stringRedisTemplate.delete(RANKING_KEY)
     }
 
     @Nested
@@ -143,55 +145,24 @@ class ProductCachingIntegrationTest {
     }
 
     @Nested
-    @DisplayName("인기 상품 캐싱")
-    inner class TopSellingProductsCaching {
-        @Test
-        @DisplayName("동일 파라미터로 조회 시 캐시된 결과를 반환한다")
-        fun topSellingProducts_cachesResult() {
-            // given
-            val nDay = 3
-            val limit = 5
-            val curDate = LocalDate.of(2025, 9, 19)
-
-            // when - 첫 번째 호출 (캐시 미스)
-            val firstResult = listingProductUseCase.topSellingProducts(nDay, limit, curDate)
-
-            // when - 두 번째 호출 (캐시 히트)
-            val secondResult = listingProductUseCase.topSellingProducts(nDay, limit, curDate)
-
-            // then - 동일한 결과 반환
-            assertThat(firstResult).isEqualTo(secondResult)
-            assertThat(firstResult.products).hasSize(5)
-
-            // then - 캐시에 데이터가 존재하는지 확인
-            val cache = cacheManager.getCache(RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS)
-            val cacheKey = "${nDay}_${limit}_${curDate}"
-            assertThat(cache?.get(cacheKey)).isNotNull
-        }
-    }
-
-    @Nested
     @DisplayName("캐시 무효화")
     inner class CacheEviction {
         @Test
-        @DisplayName("ProductCacheEvictEvent 발행 시 모든 상품 캐시가 무효화된다")
-        fun productCacheEvictEvent_clearsAllProductCaches() {
+        @DisplayName("ProductCacheEvictEvent 발행 시 상품 목록 캐시가 무효화된다")
+        fun productCacheEvictEvent_clearsProductListCache() {
             // given - 캐시를 먼저 채움
             listingProductUseCase.listingBy(0, 10, "REGISTER", "DESC")
-            listingProductUseCase.topSellingProducts(3, 5, LocalDate.of(2025, 9, 19))
 
             // then - 캐시에 데이터가 존재
             assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCTS)?.get("0_10_REGISTER_DESC")).isNotNull
-            assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS)).isNotNull
 
             // when - 트랜잭션 내에서 이벤트 발행
             transactionTemplate.execute {
                 eventPublisher.publishEvent(ProductCacheEvictEvent(reason = "테스트 캐시 무효화"))
             }
 
-            // then - 모든 상품 관련 캐시가 무효화됨
+            // then - 상품 목록 캐시가 무효화됨
             assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_PRODUCTS)?.get("0_10_REGISTER_DESC")).isNull()
-            assertThat(cacheManager.getCache(RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS)?.get("3_5_2025-09-19")).isNull()
         }
 
         @Test

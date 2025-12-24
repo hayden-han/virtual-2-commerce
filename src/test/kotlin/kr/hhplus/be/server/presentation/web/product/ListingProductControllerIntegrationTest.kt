@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.test.web.servlet.MockMvc
@@ -34,11 +35,18 @@ import java.time.Instant
     Sql(scripts = ["/sql/listing-product-cleanup.sql"], executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD),
 )
 class ListingProductControllerIntegrationTest {
+    companion object {
+        private const val RANKING_KEY_PREFIX = "product:sales:ranking"
+    }
+
     @LocalServerPort
     private var port: Int = 0
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    @Autowired
+    private lateinit var stringRedisTemplate: StringRedisTemplate
 
     @BeforeEach
     fun setup() {
@@ -47,11 +55,22 @@ class ListingProductControllerIntegrationTest {
 
         mockkStatic(Clock::class)
         every { Clock.systemDefaultZone() } returns fixedClock
+
+        // Redis 랭킹 데이터 초기화
+        flushRankingData()
     }
 
     @AfterEach
     fun teardown() {
         unmockkStatic(Clock::class)
+        flushRankingData()
+    }
+
+    private fun flushRankingData() {
+        val keys = stringRedisTemplate.keys("$RANKING_KEY_PREFIX:*")
+        if (keys.isNotEmpty()) {
+            stringRedisTemplate.delete(keys)
+        }
     }
 
     @Nested
@@ -105,6 +124,22 @@ class ListingProductControllerIntegrationTest {
             val nDay = 3
             val mProduct = 5
 
+            // Redis에 날짜별 판매 랭킹 데이터 설정 (nDay=3, curDate=2025-09-19이므로 9/17, 9/18, 9/19)
+            // 9/17: 상품4=2, 상품3=1
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-17", "4", 2.0)
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-17", "3", 1.0)
+            // 9/18: 상품4=1, 상품10=2, 상품1=1
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-18", "4", 1.0)
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-18", "10", 2.0)
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-18", "1", 1.0)
+            // 9/19: 상품4=1, 상품3=2, 상품10=1, 상품1=1, 상품9=1
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-19", "4", 1.0)
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-19", "3", 2.0)
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-19", "10", 1.0)
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-19", "1", 1.0)
+            stringRedisTemplate.opsForZSet().add("$RANKING_KEY_PREFIX:2025-09-19", "9", 1.0)
+            // 합산: 상품4=4, 상품3=3, 상품10=3, 상품1=2, 상품9=1
+
             // when & then
             mockMvc
                 .perform(
@@ -135,16 +170,12 @@ class ListingProductControllerIntegrationTest {
         }
 
         @ParameterizedTest
-        @DisplayName("n 또는 m이 0 이하인 경우 예외가 발생한다.")
+        @DisplayName("n이 0 이하인 경우 예외가 발생한다.")
         @CsvSource(
             "0, 5",
-            "3, 0",
             "-1, 5",
-            "3, -1",
-            "0, 0",
-            "-1, -1",
         )
-        fun listingTopSellingProducts_invalidParameter_exception(
+        fun listingTopSellingProducts_invalidNDay_exception(
             nDay: Int,
             mProduct: Int,
         ) {
@@ -162,7 +193,61 @@ class ListingProductControllerIntegrationTest {
                             ),
                         ),
                 ).andExpect(MockMvcResultMatchers.status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("조회 기간 및 갯수는 0보다 커야합니다."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("조회 기간은 0보다 커야합니다. (nDay: $nDay)"))
+        }
+
+        @ParameterizedTest
+        @DisplayName("m이 0 이하인 경우 예외가 발생한다.")
+        @CsvSource(
+            "3, 0",
+            "3, -1",
+        )
+        fun listingTopSellingProducts_invalidLimit_exception(
+            nDay: Int,
+            mProduct: Int,
+        ) {
+            // when & then
+            mockMvc
+                .perform(
+                    MockMvcRequestBuilders
+                        .get("/api/v1/products/top-selling")
+                        .queryParams(
+                            LinkedMultiValueMap(
+                                mapOf(
+                                    "nDay" to listOf(nDay.toString()),
+                                    "mProduct" to listOf(mProduct.toString()),
+                                ),
+                            ),
+                        ),
+                ).andExpect(MockMvcResultMatchers.status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("조회 갯수는 0보다 커야합니다. (limit: $mProduct)"))
+        }
+
+        @ParameterizedTest
+        @DisplayName("n과 m이 모두 0 이하인 경우 n에 대한 예외가 먼저 발생한다.")
+        @CsvSource(
+            "0, 0",
+            "-1, -1",
+        )
+        fun listingTopSellingProducts_bothInvalid_exception(
+            nDay: Int,
+            mProduct: Int,
+        ) {
+            // when & then
+            mockMvc
+                .perform(
+                    MockMvcRequestBuilders
+                        .get("/api/v1/products/top-selling")
+                        .queryParams(
+                            LinkedMultiValueMap(
+                                mapOf(
+                                    "nDay" to listOf(nDay.toString()),
+                                    "mProduct" to listOf(mProduct.toString()),
+                                ),
+                            ),
+                        ),
+                ).andExpect(MockMvcResultMatchers.status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("조회 기간은 0보다 커야합니다. (nDay: $nDay)"))
         }
     }
 }

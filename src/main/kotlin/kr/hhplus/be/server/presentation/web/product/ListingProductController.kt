@@ -1,6 +1,8 @@
 package kr.hhplus.be.server.presentation.web.product
 
 import kr.hhplus.be.server.application.usecase.product.ListingProductUseCase
+import kr.hhplus.be.server.application.usecase.product.TopSellingProductUseCase
+import kr.hhplus.be.server.domain.model.product.TopSellingProductQuery
 import kr.hhplus.be.server.presentation.dto.product.ListingProductResponse
 import kr.hhplus.be.server.presentation.dto.product.TopSellingProductListResponse
 import org.springframework.web.bind.annotation.GetMapping
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/products")
 class ListingProductController(
     private val listingProductUseCase: ListingProductUseCase,
+    private val topSellingProductUseCase: TopSellingProductUseCase,
 ) {
     @GetMapping
     fun listingProducts(
@@ -39,12 +42,8 @@ class ListingProductController(
         @RequestParam(required = false, defaultValue = "3") nDay: Int,
         @RequestParam(required = false, defaultValue = "5") mProduct: Int,
     ): TopSellingProductListResponse {
-        val topSellingProductVO =
-            listingProductUseCase
-                .topSellingProducts(
-                    nDay = nDay,
-                    limit = mProduct,
-                )
+        val query = TopSellingProductQuery.of(nDay = nDay, limit = mProduct)
+        val topSellingProductVO = topSellingProductUseCase.getTopSellingProducts(query)
 
         return TopSellingProductListResponse(topSellingProductVO)
     }
