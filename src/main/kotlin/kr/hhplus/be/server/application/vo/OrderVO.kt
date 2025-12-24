@@ -2,9 +2,11 @@ package kr.hhplus.be.server.application.vo
 
 import kr.hhplus.be.server.domain.model.order.OrderSummary
 import kr.hhplus.be.server.domain.model.payment.PaymentSummary
+import java.time.LocalDate
 
 data class PlaceOrderResultVO(
     val orderId: Long,
+    val orderDate: LocalDate,
     val paymentMethod: String,
     val paymentChargeAmount: Long,
     val paymentDiscountAmount: Long,
@@ -15,9 +17,11 @@ data class PlaceOrderResultVO(
         fun of(
             orderSummary: OrderSummary,
             paymentSummary: PaymentSummary,
+            orderDate: LocalDate = LocalDate.now(),
         ): PlaceOrderResultVO =
             PlaceOrderResultVO(
                 orderId = orderSummary.id!!,
+                orderDate = orderDate,
                 paymentMethod = paymentSummary.method.name,
                 paymentTotalAmount = paymentSummary.totalAmount,
                 paymentDiscountAmount = paymentSummary.discountAmount,
