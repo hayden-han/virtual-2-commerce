@@ -39,9 +39,9 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const DEBUG = __ENV.DEBUG === 'true';
 
-// 테스트 데이터 - 실제 환경에 맞게 수정 필요
-const MEMBER_IDS = JSON.parse(__ENV.MEMBER_IDS || '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]');
-const PRODUCTS = JSON.parse(__ENV.PRODUCTS || '[{"id": 1, "price": 10000}, {"id": 2, "price": 20000}, {"id": 3, "price": 15000}]');
+// 테스트 데이터 - Stress Test용 (저렴한 가격, 충분한 잔고)
+const MEMBER_IDS = JSON.parse(__ENV.MEMBER_IDS || '[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100]');
+const PRODUCTS = JSON.parse(__ENV.PRODUCTS || '[{"id":1,"price":100},{"id":2,"price":200},{"id":3,"price":300},{"id":4,"price":400},{"id":5,"price":500},{"id":6,"price":600},{"id":7,"price":700},{"id":8,"price":800},{"id":9,"price":900},{"id":10,"price":1000}]');
 
 // ============================================================================
 // 유틸리티 함수
@@ -64,7 +64,7 @@ function generateIdempotencyKey() {
 export default function () {
   const memberId = getRandomElement(MEMBER_IDS);
   const product = getRandomElement(PRODUCTS);
-  const quantity = getRandomInt(1, 3);
+  const quantity = 1;  // 수량 1로 고정 (잔고 소진 방지)
   const totalAmount = product.price * quantity;
 
   const payload = JSON.stringify({
