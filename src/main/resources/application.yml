@@ -17,8 +17,8 @@ spring:
 
 kafka:
   group-id: "virtual-2-commerce-group"
-  place-order-complete:
-    topic: "place-order-complete"
+  topics:
+    place-order-complete: "place-order-complete"
 
 app:
   idempotency:

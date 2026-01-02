@@ -22,6 +22,12 @@ class TestDockerComposeContainer {
         private const val REDIS_SERVICE_NAME = "redis-test"
         private const val REDIS_PORT = 6379
 
+        private const val ZOOKEEPER_SERVICE_NAME = "zookeeper-test"
+        private const val ZOOKEEPER_PORT = 2181
+
+        private const val KAFKA_SERVICE_NAME = "kafka-test"
+        private const val KAFKA_PORT = 9092
+
         @JvmStatic
         @Container
         val composeContainer: DockerComposeContainer<*> =
@@ -43,6 +49,16 @@ class TestDockerComposeContainer {
                     REDIS_PORT,
                     Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(30)),
                 )
+                withExposedService(
+                    ZOOKEEPER_SERVICE_NAME,
+                    ZOOKEEPER_PORT,
+                    Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(30)),
+                )
+                withExposedService(
+                    KAFKA_SERVICE_NAME,
+                    KAFKA_PORT,
+                    Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(60)),
+                )
                 start()
             }
 
@@ -59,5 +75,11 @@ class TestDockerComposeContainer {
         fun getRedisHost(): String = composeContainer.getServiceHost(REDIS_SERVICE_NAME, REDIS_PORT)
 
         fun getRedisMappedPort(): Int = composeContainer.getServicePort(REDIS_SERVICE_NAME, REDIS_PORT)
+
+        fun getKafkaHost(): String = composeContainer.getServiceHost(KAFKA_SERVICE_NAME, KAFKA_PORT)
+
+        fun getKafkaMappedPort(): Int = composeContainer.getServicePort(KAFKA_SERVICE_NAME, KAFKA_PORT)
+
+        fun getKafkaBootstrapServers(): String = "${getKafkaHost()}:${getKafkaMappedPort()}"
     }
 }
