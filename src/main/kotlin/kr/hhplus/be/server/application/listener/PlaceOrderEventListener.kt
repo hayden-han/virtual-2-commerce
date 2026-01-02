@@ -17,6 +17,7 @@ class PlaceOrderEventListener(
     private val logger = KotlinLogging.logger {}
 
     /**
+     * 이미 기존에 기 적용된 application event를 활용한 이벤트 기반 설계
      * 트랜잭션이 성공적으로 커밋된 후에 이벤트를 처리한다.
      * 메인 트랜잭션과 분리하기 위해 비동기로 실행하며,
      * 외부 시스템 연동 실패 시 최대 2회(총 3회)까지 재시도한다.
