@@ -1,5 +1,8 @@
 package kr.hhplus.be.server.application.concurrency
 
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -13,6 +16,8 @@ import kr.hhplus.be.server.infrastructure.persistence.coupon.CouponIssuanceJpaRe
 import kr.hhplus.be.server.infrastructure.persistence.coupon.CouponJpaRepository
 import kr.hhplus.be.server.infrastructure.persistence.order.OrderSummaryJpaRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -24,6 +29,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.test.web.servlet.MockMvc
+import java.time.LocalDateTime
 
 /**
  * 쿠폰 동시성 이슈 검증 테스트
@@ -66,6 +72,19 @@ class CouponConcurrencyIntegrationTest {
 
     @Autowired
     private lateinit var orderSummaryJpaRepository: OrderSummaryJpaRepository
+
+    private val fixedNow = LocalDateTime.of(2025, 6, 18, 12, 59, 59)
+
+    @BeforeEach
+    fun setUp() {
+        mockkStatic(LocalDateTime::class)
+        every { LocalDateTime.now() } returns fixedNow
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkStatic(LocalDateTime::class)
+    }
 
     @Nested
     @DisplayName("TC-CPN-001: 쿠폰 발급 API - 선착순 쿠폰 수량 초과 발급 검증")
