@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS coupon (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE INDEX idx_coupon_member_id ON coupon(member_id);
 CREATE INDEX idx_coupon_coupon_summary_id ON coupon(coupon_summary_id);
+-- OnePerMember 정책을 위한 Unique 제약 (회원당 쿠폰 종류별 1개만 발급)
+CREATE UNIQUE INDEX uk_coupon_member_summary ON coupon(member_id, coupon_summary_id);
 
 -- 5. 쿠폰 발급 상태 테이블
 CREATE TABLE IF NOT EXISTS coupon_issuance (

@@ -15,9 +15,4 @@ class MemberPersistenceAdapter(
         memberRepository
             .findById(memberId)
             .map(MemberJpaEntityMapper::toDomain)
-
-    override fun findByIdWithLock(memberId: Long): Optional<Member> =
-        memberRepository
-            .findByIdWithLock(memberId)
-            .map(MemberJpaEntityMapper::toDomain)
 }

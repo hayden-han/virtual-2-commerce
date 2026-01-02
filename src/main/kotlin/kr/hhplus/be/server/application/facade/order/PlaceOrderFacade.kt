@@ -43,10 +43,9 @@ class PlaceOrderFacade(
         requestPaymentSummary: PlaceOrderPaymentSummaryVO,
         orderAt: LocalDateTime,
     ): PlaceOrderResultVO {
-        // TODO: 동시성 이슈방지를 위해 회원정보 조회시 Lock을 사용 중. 분산락 적용 후 락을 제거할것
         val member =
             memberOutput
-                .findByIdWithLock(memberId)
+                .findById(memberId)
                 .orElseThrow {
                     ConflictResourceException(
                         message = "회원정보를 찾을 수 없습니다.",

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
-import java.util.*
+import java.util.Optional
 
 @UnitTest
 class MyCouponInteractorTest {
@@ -71,6 +71,7 @@ class MyCouponInteractorTest {
         @DisplayName("쿠폰을 정상적으로 사용 처리한다")
         fun success() {
             // given
+            val now = LocalDateTime.of(2025, 12, 1, 0, 0)
             val member = StubFactory.member(id = 1L, email = "user@test.com", pwd = "pwd")
             val couponSummaryId = 10L
             val couponSummary =
@@ -81,24 +82,26 @@ class MyCouponInteractorTest {
                     couponSummary = couponSummary,
                     memberId = member.id!!,
                     usingAt = null,
-                    now = LocalDateTime.of(2025, 12, 1, 0, 0),
+                    now = now,
                 )
-            val usedCoupon = coupon.copy(usingAt = LocalDateTime.of(2025, 9, 24, 12, 0))
+            val usedCoupon = coupon.copy(usingAt = now)
             every { couponOutput.findByCouponSummaryIdAndMemberId(couponSummaryId, member.id!!) } returns Optional.of(coupon)
-            every { couponOutput.save(any()) } returns usedCoupon
+            every { couponOutput.atomicUse(couponSummaryId, member.id!!, now) } returns true
+            every { couponOutput.refresh(coupon) } returns usedCoupon
 
             // when
-            val result = interactor.using(member, couponSummaryId, LocalDateTime.of(2025, 9, 24, 12, 0))
+            val result = interactor.using(member, couponSummaryId, now)
 
             // then
-            assertThat(result.usingAt).isEqualTo(LocalDateTime.of(2025, 9, 24, 12, 0))
-            verify { couponOutput.save(match { it.usingAt == LocalDateTime.of(2025, 9, 24, 12, 0) }) }
+            assertThat(result.usingAt).isEqualTo(now)
+            verify { couponOutput.refresh(coupon) }
         }
 
         @Test
-        @DisplayName("이미 사용된 쿠폰을 사용하려 하면 예외 발생")
-        fun alreadyUsed_throwsException() {
+        @DisplayName("이미 사용되었거나 만료된 쿠폰을 사용하려 하면 예외 발생")
+        fun alreadyUsedOrExpired_throwsException() {
             // given
+            val now = LocalDateTime.of(2025, 12, 1, 0, 0)
             val member = StubFactory.member(id = 1L, email = "user@test.com", pwd = "pwd")
             val couponSummaryId = 10L
             val couponSummary =
@@ -108,43 +111,17 @@ class MyCouponInteractorTest {
                     id = 100L,
                     couponSummary = couponSummary,
                     memberId = member.id!!,
-                    usingAt = LocalDateTime.of(2025, 9, 20, 12, 0),
-                    now = LocalDateTime.of(2025, 12, 1, 0, 0),
+                    usingAt = null,
+                    now = now,
                 )
             every { couponOutput.findByCouponSummaryIdAndMemberId(couponSummaryId, member.id!!) } returns Optional.of(coupon)
+            every { couponOutput.atomicUse(couponSummaryId, member.id!!, now) } returns false
 
             // when & then
             assertThatThrownBy {
-                interactor.using(member, couponSummaryId, LocalDateTime.of(2025, 9, 24, 12, 0))
+                interactor.using(member, couponSummaryId, now)
             }.isInstanceOf(kr.hhplus.be.server.domain.exception.ConflictResourceException::class.java)
-                .hasMessageContaining("이미 사용된 쿠폰입니다.")
-        }
-
-        @Test
-        @DisplayName("만료된 쿠폰을 사용하려 하면 예외 발생")
-        fun expired_throwsException() {
-            // given
-            val member = StubFactory.member(id = 1L, email = "user@test.com", pwd = "pwd")
-            val couponSummaryId = 10L
-            val couponSummary =
-                StubFactory.couponSummary(id = couponSummaryId, name = "쿠폰", discountPercentage = 20L, validDays = 10)
-            val expiredAt = LocalDateTime.of(2025, 9, 20, 0, 0)
-            val coupon =
-                StubFactory
-                    .coupon(
-                        id = 100L,
-                        couponSummary = couponSummary,
-                        memberId = member.id!!,
-                        usingAt = null,
-                        now = expiredAt.minusDays(10),
-                    ).copy(expiredAt = expiredAt)
-            every { couponOutput.findByCouponSummaryIdAndMemberId(couponSummaryId, member.id!!) } returns Optional.of(coupon)
-
-            // when & then
-            assertThatThrownBy {
-                interactor.using(member, couponSummaryId, LocalDateTime.of(2025, 9, 24, 12, 0))
-            }.isInstanceOf(kr.hhplus.be.server.domain.exception.ConflictResourceException::class.java)
-                .hasMessageContaining("만료된 쿠폰입니다.")
+                .hasMessageContaining("이미 사용되었거나 만료된 쿠폰입니다.")
         }
 
         @Test
