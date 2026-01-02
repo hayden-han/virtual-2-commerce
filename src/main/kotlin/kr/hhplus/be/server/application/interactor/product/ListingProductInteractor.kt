@@ -1,28 +1,22 @@
 package kr.hhplus.be.server.application.interactor.product
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kr.hhplus.be.server.application.enums.ListingProductDescending
 import kr.hhplus.be.server.application.enums.ListingProductSortBy
 import kr.hhplus.be.server.application.port.out.ListingProductOutput
 import kr.hhplus.be.server.application.usecase.product.ListingProductUseCase
 import kr.hhplus.be.server.application.vo.ListingProductVO
 import kr.hhplus.be.server.application.vo.ProductSummaryItemVO
-import kr.hhplus.be.server.application.vo.TopSellingProductItemVO
-import kr.hhplus.be.server.application.vo.TopSellingProductVO
 import kr.hhplus.be.server.domain.model.product.ProductSummary
 import kr.hhplus.be.server.infrastructure.config.RedisCacheConfig
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDate
 
 @Transactional(readOnly = true)
 @Service
 class ListingProductInteractor(
     private val listingProductOutput: ListingProductOutput,
 ) : ListingProductUseCase {
-    private val logger = KotlinLogging.logger { }
-
     @Cacheable(
         value = [RedisCacheConfig.CACHE_PRODUCTS],
         key = "#page + '_' + #size + '_' + #sortBy + '_' + #descending",
@@ -61,37 +55,5 @@ class ListingProductInteractor(
                     )
                 },
         )
-    }
-
-    @Cacheable(
-        value = [RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS],
-        key = "#nDay + '_' + #limit + '_' + #curDate",
-    )
-    override fun topSellingProducts(
-        nDay: Int,
-        limit: Int,
-        curDate: LocalDate,
-    ): TopSellingProductVO {
-        if (nDay <= 0 || limit <= 0) {
-            logger.warn { "조회 기간 및 갯수는 0보다 커야합니다. nDay: $nDay, limit: $limit" }
-            throw IllegalArgumentException("조회 기간 및 갯수는 0보다 커야합니다.")
-        }
-        val startDate = curDate.minusDays(nDay.toLong())
-
-        return listingProductOutput
-            .topSellingProducts(startDate, limit)
-            .let { topSellingProducts ->
-                val topSellingProductItemVOList =
-                    topSellingProducts.map { (productSummary, totalOrderQuantity) ->
-                        TopSellingProductItemVO(
-                            id = productSummary.id!!,
-                            name = productSummary.name,
-                            price = productSummary.price,
-                            stockQuantity = productSummary.stockQuantity,
-                            totalOrderQuantity = totalOrderQuantity,
-                        )
-                    }
-                TopSellingProductVO(products = topSellingProductItemVOList)
-            }
     }
 }

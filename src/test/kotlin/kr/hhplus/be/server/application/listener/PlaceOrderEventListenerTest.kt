@@ -8,6 +8,7 @@ import kr.hhplus.be.server.application.port.out.ExternalServiceOutput
 import kr.hhplus.be.server.application.vo.PlaceOrderItemVO
 import kr.hhplus.be.server.application.vo.PlaceOrderResultVO
 import org.junit.jupiter.api.AfterEach
+import java.time.LocalDate
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -41,6 +42,7 @@ class PlaceOrderEventListenerTest {
     private val placeOrderResult =
         PlaceOrderResultVO(
             orderId = 1L,
+            orderDate = LocalDate.of(2025, 9, 19),
             paymentMethod = "POINT",
             paymentChargeAmount = 1000L,
             paymentDiscountAmount = 0L,
