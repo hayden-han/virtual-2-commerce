@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
 
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -111,6 +112,7 @@ class MyBalanceControllerIntegrationTest {
             val chargeAmount = 5000
             val requestBody = "{\"chargeAmount\":$chargeAmount}"
             val rechargedAmount = balance + chargeAmount
+            val idempotencyKey = UUID.randomUUID().toString()
 
             // when & then
             mockMvc
@@ -118,6 +120,7 @@ class MyBalanceControllerIntegrationTest {
                     MockMvcRequestBuilders
                         .put("/api/v1/balances/me/$balanceId/recharge")
                         .header("X-Member-Id", memberId)
+                        .header("Idempotency-Key", idempotencyKey)
                         .contentType("application/json")
                         .content(requestBody),
                 ).andExpect(MockMvcResultMatchers.status().isOk)
@@ -135,6 +138,7 @@ class MyBalanceControllerIntegrationTest {
             val invalidMemberId = 999L
             val invalidBalanceId = 1L
             val requestBody = "{\"chargeAmount\":5000}"
+            val idempotencyKey = UUID.randomUUID().toString()
 
             // when & then
             mockMvc
@@ -142,6 +146,7 @@ class MyBalanceControllerIntegrationTest {
                     MockMvcRequestBuilders
                         .put("/api/v1/balances/me/$invalidBalanceId/recharge")
                         .header("X-Member-Id", invalidMemberId)
+                        .header("Idempotency-Key", idempotencyKey)
                         .contentType("application/json")
                         .content(requestBody),
                 ).andExpect(MockMvcResultMatchers.status().isNotFound)
@@ -155,6 +160,7 @@ class MyBalanceControllerIntegrationTest {
             val memberId = 1L
             val invalidBalanceId = 2L
             val requestBody = "{\"chargeAmount\":5000}"
+            val idempotencyKey = UUID.randomUUID().toString()
 
             // when & then
             mockMvc
@@ -162,6 +168,7 @@ class MyBalanceControllerIntegrationTest {
                     MockMvcRequestBuilders
                         .put("/api/v1/balances/me/$invalidBalanceId/recharge")
                         .header("X-Member-Id", memberId)
+                        .header("Idempotency-Key", idempotencyKey)
                         .contentType("application/json")
                         .content(requestBody),
                 ).andExpect(MockMvcResultMatchers.status().isNotFound)
@@ -176,6 +183,28 @@ class MyBalanceControllerIntegrationTest {
             val memberId = 1L
             val balanceId = 1L
             val requestBody = "{\"chargeAmount\":$chargeAmount}"
+            val idempotencyKey = UUID.randomUUID().toString()
+
+            // when & then
+            mockMvc
+                .perform(
+                    MockMvcRequestBuilders
+                        .put("/api/v1/balances/me/$balanceId/recharge")
+                        .header("X-Member-Id", memberId)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .contentType("application/json")
+                        .content(requestBody),
+                ).andExpect(MockMvcResultMatchers.status().isBadRequest)
+                .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("충전 금액은 0원보다 커야합니다.") }
+        }
+
+        @Test
+        @DisplayName("Idempotency-Key 헤더가 없을 경우 400 Bad Request를 반환한다")
+        fun rechargeMyBalance_missingIdempotencyKey() {
+            // given
+            val memberId = 1L
+            val balanceId = 1L
+            val requestBody = "{\"chargeAmount\":5000}"
 
             // when & then
             mockMvc
@@ -186,7 +215,7 @@ class MyBalanceControllerIntegrationTest {
                         .contentType("application/json")
                         .content(requestBody),
                 ).andExpect(MockMvcResultMatchers.status().isBadRequest)
-                .andExpect { MockMvcResultMatchers.jsonPath("$.message").value("충전 금액은 0원보다 커야합니다.") }
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Idempotency-Key 헤더값이 필요합니다."))
         }
     }
 }

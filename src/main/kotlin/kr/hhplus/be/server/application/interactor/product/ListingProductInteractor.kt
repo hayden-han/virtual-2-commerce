@@ -10,6 +10,8 @@ import kr.hhplus.be.server.application.vo.ProductSummaryItemVO
 import kr.hhplus.be.server.application.vo.TopSellingProductItemVO
 import kr.hhplus.be.server.application.vo.TopSellingProductVO
 import kr.hhplus.be.server.domain.model.product.ProductSummary
+import kr.hhplus.be.server.infrastructure.config.RedisCacheConfig
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -21,6 +23,10 @@ class ListingProductInteractor(
 ) : ListingProductUseCase {
     private val logger = KotlinLogging.logger { }
 
+    @Cacheable(
+        value = [RedisCacheConfig.CACHE_PRODUCTS],
+        key = "#page + '_' + #size + '_' + #sortBy + '_' + #descending",
+    )
     override fun listingBy(
         page: Int,
         size: Int,
@@ -57,6 +63,10 @@ class ListingProductInteractor(
         )
     }
 
+    @Cacheable(
+        value = [RedisCacheConfig.CACHE_TOP_SELLING_PRODUCTS],
+        key = "#nDay + '_' + #limit + '_' + #curDate",
+    )
     override fun topSellingProducts(
         nDay: Int,
         limit: Int,

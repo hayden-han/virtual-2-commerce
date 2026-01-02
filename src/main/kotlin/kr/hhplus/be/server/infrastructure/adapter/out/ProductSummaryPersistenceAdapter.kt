@@ -5,6 +5,7 @@ import kr.hhplus.be.server.application.enums.ListingProductSortBy
 import kr.hhplus.be.server.application.port.out.ListingProductOutput
 import kr.hhplus.be.server.application.port.out.ProductSummaryOutput
 import kr.hhplus.be.server.domain.model.product.ProductSummary
+import kr.hhplus.be.server.infrastructure.lock.DistributedLock
 import kr.hhplus.be.server.infrastructure.persistence.product.ProductSummaryJpaRepository
 import kr.hhplus.be.server.infrastructure.persistence.product.mapper.ProductSummaryJpaEntityMapper
 import org.springframework.data.domain.PageRequest
@@ -69,6 +70,10 @@ class ProductSummaryPersistenceAdapter(
         }
     }
 
+    @DistributedLock(
+        key = "#productSummaryId",
+        keyPrefix = "lock:product:stock:",
+    )
     override fun reduceStock(
         productSummaryId: Long,
         quantity: Int,
