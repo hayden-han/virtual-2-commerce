@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.infrastructure.persistence.config
 
+import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -30,6 +31,11 @@ class JpaConfig {
             this.jpaVendorAdapter =
                 org.springframework.orm.jpa.vendor
                     .HibernateJpaVendorAdapter()
+            this.setJpaPropertyMap(
+                mapOf(
+                    "hibernate.physical_naming_strategy" to CamelCaseToUnderscoresNamingStrategy::class.java.name,
+                ),
+            )
             this.afterPropertiesSet()
         }
 }
